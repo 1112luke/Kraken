@@ -1,0 +1,7 @@
+__From Ground to Drone__
+
+33333 antenna postion: param1 = lat, param2 = lng
+33334 "circledata": {"circle": circledata, "maxlines": maxlines},
+33335 "sweepdata": {"sweep": sweepdata, "target": radiodirection}
+33336 
+33337 

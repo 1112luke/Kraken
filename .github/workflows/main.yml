@@ -1,0 +1,28 @@
+name: Push to Docker
+
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to the main branch
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx      
+        uses: crazy-max/ghaction-docker-buildx@v1      
+        with:        
+          version: latest
+
+      - name: Log in to Docker Hub
+        run: docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_PASSWORD }}"
+
+      - name: Build Docker image
+        run: docker build ./Edge --platform linux/arm/v7 --file ./Edge/Dockerfile --tag 1112luke/hounddrone:${{ github.sha }}
+
+      - name: Push Docker image
+        run: docker push 1112luke/hounddrone:${{ github.sha }}
