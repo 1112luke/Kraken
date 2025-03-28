@@ -28,6 +28,7 @@ function App() {
     const [sweepdata, setsweepdata] = useState([]);
     const [datarate, setdatarate] = useState(20);
     const [connected, setconnected] = useState(0);
+    const [movespeed, setmovespeed] = useState(8.5);
 
     //map state
     const [mappos, setmapppos] = useState({
@@ -185,7 +186,24 @@ function App() {
                         <br></br>
                         {/* mode selector*/}
                         {mode == "none" && <div>Select a Mode</div>}
-                        {mode == "locationfollow" && <div>lf</div>}
+                        {mode == "locationfollow" && (
+                            <div>
+                                Movement Speed (m/s): {movespeed}
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={18}
+                                    value={movespeed * 2}
+                                    onChange={(e) => {
+                                        setmovespeed(e.target.value / 2);
+                                        sendCommand(
+                                            "setmovespeed",
+                                            e.target.value / 2
+                                        );
+                                    }}
+                                ></input>
+                            </div>
+                        )}
                         {mode == "debug" && (
                             <>
                                 <Button
@@ -243,6 +261,20 @@ function App() {
                                         );
                                     }}
                                 ></input>
+                                Movement Speed (m/s): {movespeed}
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={18}
+                                    value={movespeed * 2}
+                                    onChange={(e) => {
+                                        setmovespeed(e.target.value / 2);
+                                        sendCommand(
+                                            "setmovespeed",
+                                            e.target.value / 2
+                                        );
+                                    }}
+                                ></input>
                                 Datarate (hz): {datarate}
                                 <input
                                     type="range"
@@ -274,6 +306,22 @@ function App() {
                                         );
                                     }}
                                 ></input>
+                                <div>
+                                    Radiomode:
+                                    <Button
+                                        text="Simulation"
+                                        onpress={() => [
+                                            sendCommand("setradiomode", 0),
+                                        ]}
+                                    ></Button>
+                                    <br></br>
+                                    <Button
+                                        text="Real"
+                                        onpress={() => [
+                                            sendCommand("setradiomode", 1),
+                                        ]}
+                                    ></Button>
+                                </div>
                             </>
                         )}
                         {mode == "eyeofender" && (

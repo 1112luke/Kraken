@@ -76,7 +76,7 @@ def getData():
             if(msg.get_type() == "COMMAND_LONG"):
                 #print(msg.command)
                 if(msg.command == 33339):
-                    print("antenna")
+                    print("antenna", msg.param1)
                     dronedata["antenna"]["reading"] = msg.param1
             if msg.get_type() == "HEARTBEAT":
                 if(msg.get_srcComponent() == 191):
@@ -168,8 +168,13 @@ def Server():
         elif command == "setsweepwidth":
             cmdnum = 33336
             param5 = payload["value"]
+        
+        elif command =="setmovespeed":
+            cmdnum = 33336
+            param6 = payload["value"]
 
         elif command == "circle":
+            print("CIRCLE")
             cmdnum = 33337
             param1 = 1
 
@@ -183,12 +188,18 @@ def Server():
                 param1 = 1
             else:
                 param2 = 1
+        elif command == "setradiomode":
+            cmdnum = 33338
+            if payload["value"]:
+                print("real")
+                param3 = 1
+            else:
+                print("simulation")
+                param4 = 1
 
 
         #send message
         the_connection.mav.command_long_send(1, 191, cmdnum, 0, float(param1), float(param2), float(param3), float(param4), float(param5), float(param6), float(param7))
-
-
         #send mqtt
         #client.publish("drone/command", payload=json.dumps(payload))
         return "amazing"
@@ -237,6 +248,7 @@ command table
     param3: rotationspeed
     param4: datarate
     param5: sweepwidth
+    param6: movespeed
 
 33337: eyeofender commands
     param1: circle
@@ -247,6 +259,8 @@ command table
 33338: debug commands
     param1: collect
     param2: stop collect
+    param3: setradiomode real
+    param4: setradiomode simulated
 
 
 ------Incoming------

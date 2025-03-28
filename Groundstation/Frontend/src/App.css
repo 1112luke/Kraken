@@ -53,7 +53,7 @@ body{
 .left{
   height:100%;
   flex:1;
-  background-color: darkgray;
+  background-color: rgb(99, 148, 184);
   display:flex;
   align-items: center;
   justify-content: center;

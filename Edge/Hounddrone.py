@@ -30,7 +30,7 @@ class Hounddrone:
         
         def onmessage(client, userdata, message):
             self.radiodata = {"data": parseData(message), "hdg": self.hdg, "lat":self.lat, "lng": self.lng}
-            #print("RADIODATA RECEIVED", self.radiodata)
+            print("RADIODATA RECEIVED", self.radiodata)
 
         def collect():
             print("COLLECT")
@@ -50,11 +50,15 @@ class Hounddrone:
                     },
                 }   
                 while(1):
-                    if(self.collecting):
-                        self.client.publish(f"radiohound/clients/command/{self.radioaddress}", payload=json.dumps(payload))
-                        #self.client.publish(f"radiohound/clients/command/", payload=json.dumps(payload))
-                        time.sleep(1/self.radiorate)
-                        #print("sent collect request") 
+                    try:
+                        if(self.collecting):
+                            self.client.publish(f"radiohound/clients/command/{self.radioaddress}", payload=json.dumps(payload))
+                            #self.client.publish(f"radiohound/clients/command/", payload=json.dumps(payload))
+                            time.sleep(1/self.radiorate)
+                            #print("sent collect request")
+                    except:
+                        print("Failed to get data")
+                            
 
 
         self.client.subscribe(f"radiohound/clients/data/{self.radioaddress}")
@@ -85,6 +89,9 @@ class Hounddrone:
     def setmode(self, mode):
         self.mode = mode
         self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component,176,0,1,mode,0,0,0,0,0)  
+
+    def setspeed(self, metersasecond):
+            self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component, 178, 0, 1, metersasecond, -2, 0, 0, 0, 0)
 
     def takeoff(self, alt):
         self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component,22,0,0,0,0,0,0,0,alt)

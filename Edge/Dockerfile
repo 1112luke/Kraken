@@ -1,7 +1,7 @@
 FROM arm64v8/python:3.12
 
 # Install system dependencies for building Python packages
-RUN apt-get update && apt-get install -y \
+RUN apt-get clean && apt-get update --allow-releaseinfo-change && apt-get install -y \
     gcc \
     g++ \
     libpython3-dev \

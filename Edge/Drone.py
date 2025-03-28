@@ -27,15 +27,14 @@ print("CLIENT1 CONNECTED")
 client2 = mqtt.Client()
 print("CLIENT2 CONNECTING...")  
 
-#usb mqtt connection
-#TODo -- make this go second and tell program it is connected to mavlink and then to radio, program won't run without radio though
+#usb mqtt connection to radiohound
+#TODO -- make this go second and tell program it is connected to mavlink and then to radio, program won't run without radio though
 while(1):
     try:
         client2.connect('192.168.6.2', 1883, 60)
         print("RADIOHOUND CONNECTED")
         break
     except:
-        break
         print("RADIOHOUND CONNECTING...")
 
 
@@ -43,6 +42,7 @@ while(1):
 print("MAKING MAVLINK CONNECTION...")
 #the_connection = mavutil.mavlink_connection("udp:localhost:14551", source_system=1, source_component=191)
 
+#connect to mavlink_router or mavlink at local port 14551. if not using mavlink router, connect directly to telemetry radio.
 if(mavlink_router):
     the_connection = mavutil.mavlink_connection("udp:0.0.0.0:14551", source_system=1, source_component=191)
 else:
@@ -56,22 +56,27 @@ the_connection.wait_heartbeat()
 the_connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
 print("Heartbeat from system (system %u component %u)" % (the_connection.target_system, the_connection.target_component))
 
-#create object for simple commands
+#create drone object
 Drone = Hounddrone(the_connection, client2, "e415f6f662e5")
 
-#prompt drone what messages to stream and how fast
+#prompt flight controller what messages to stream and how fast
 #global_position_int
 Drone.requestMessageStream(33, 10)
 
 time.sleep(1) #sleep to allow drone to start producing relevant data
 
+
+
 #configure radio simulation
 scene = RadioScene()
 
+#create a radio
 radio = scene.addRadio(10)
 
+#create an antenna
 antenna = scene.addAntenna(180,0,10)
 
+#attatch antenna to drone so the position is tracked in hounddrone.startstream
 Drone.attatch(antenna)
 
 #define modes
@@ -107,10 +112,10 @@ def main():
     global sweepdir
     global sweepdata
     global ROTATIONSPEED
+    global RADIOSOURCE
     global DATARATE
 
     while(1):
-
         #check for change of mode
         if(lastmode != mode):
             #mode changed
@@ -135,7 +140,7 @@ def main():
             if(Drone.mode != 4):
                 Drone.setmode(4)
                 
-
+            #first mode to be called for radiofollow
             if(status == "initsearch"):
                 circledata = []
                 sweepdata = []
@@ -295,6 +300,7 @@ def main():
             if(status == "none"):
                 pass
 
+                #first status to initiate
             if(status == "initcircle"):
                 #create new data array
                 circledata = []
@@ -336,6 +342,7 @@ def main():
                 pass
             
 
+#get angle between two angles
 def angleTo(a1, a2, flag):
     out = (((a1 - a2) + 180) % 360 - 180)
     if(flag):
@@ -424,7 +431,7 @@ def sendData():
     
 
 
-#Mavlink Message Handling
+#Mavlink Incoming Message Handling from Groundstation
 def receiveData():
     global status
     global mode
@@ -433,6 +440,7 @@ def receiveData():
     global sweepwidth
     global sweepdata
     global ROTATIONSPEED
+    global RADIOSOURCE
     global DATARATE
 
     while(1):
@@ -475,6 +483,7 @@ def receiveData():
             #    status = "none"
             #    sweepdata = []
                 
+        #if commamnd long message
         elif msg.get_type() == "COMMAND_LONG":
             #setradiopos
             if msg.command == 33333:
@@ -510,6 +519,8 @@ def receiveData():
                 elif msg.param5:
                     sweepwidth = msg.param5
                     print("Sweep: ", sweepwidth)
+                elif msg.param6:
+                    Drone.setspeed(msg.param6)
             elif msg.command == 33337:
                 if msg.param1:
                     status = "initcircle"
@@ -520,14 +531,12 @@ def receiveData():
                     Drone.startCollecting()
                 elif msg.param2:
                     Drone.stopCollecting()
-
-
-
-            elif msg.command == 33338:
-                if param1:
-                    Drone.startCollecting()
-                elif param2:
-                    Drone.stopCollecting()
+                elif msg.param3:
+                    print("real")
+                    RADIOSOURCE = "real"
+                elif msg.param4:
+                    print("simulation")
+                    RADIOSOURCE = "simulation"
     return "amazing" 
                 
 
