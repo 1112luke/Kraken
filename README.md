@@ -29,7 +29,7 @@ This is the fixed IP address for the Kraken.
 
     ./kraken-DOA/release.sh
 
-The Kraken is now active, and connections to the groundstation program can be made killing the terminal with this connection will deactivate the Kraken.
+The Kraken is now active, and connections to the groundstation program can be madel. Killing the terminal with this connection will deactivate the Kraken.
 
 4. In a new terminal on the groundstation device with docker installed, pull the groundstation docker container from github with the following command:
 
