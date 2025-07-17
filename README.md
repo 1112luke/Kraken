@@ -73,7 +73,7 @@ This is the fixed IP address for the companion computer.
 8. On the groundstation computer, install [mavproxy](https://ardupilot.org/mavproxy/docs/getting_started/download_and_installation.html) and run it with the following command:
 
         mavproxy.py --master <mavlinksource> --baud 57600 --out 127.0.0.1:14553 --out 127.0.0.1:14550 --streamrate=-1
-   where <mavlinksource> connects to the endpoint specified in the companion computer's mavlink-router config file. In our case, <mavlinksource> is tcp:192.168.10.2:14553
+   where mavlinksource connects to the endpoint specified in the companion computer's mavlink-router config file. In our case, mavlinksource is tcp:192.168.10.2:14553
    the outbound route to 14553 is for the krakenground docker container. the route to 14550 is the default route for Qgroundcontrol, allowing both groundstation software and Kraken software to interface over the same Mavlink connection.
    
 9. To run the groundstation software in UAV mode, execute the following 
@@ -90,7 +90,7 @@ The Kraken has three interfaces by dafault:
 
 - INPUT: The frequency of the Kraken can be changed by sending via udp to 192.168.10.33 port 3332 “FREQ:<freq>” where freq is the desired frequency.
 
-These interfaces become active only after the kraken has been "released", as in steps 2-3 form the Standalone Mode setup above.
+These interfaces become active only after the kraken has been "released", as in steps 2-3 form the Standalone Mode setup above. The Kraken python class from [Kraken/Edge]https://github.com/1112luke/Kraken/blob/main/Edge/Kraken.py may also be useful.
 
 ## Software overview
 This repository contains the software for the companion computer as well as all ground station software. The docker images for the companion computer and the grounstation are built from the Dockerfiles in the Edge and Groundstation folders, respectively. To change the docker containers, build from these dockerfiles and run the built images in place of 1112luke/drone and 1112luke/krakenground. An overview of all software and communications is shown:
