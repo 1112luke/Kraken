@@ -3,16 +3,19 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import Dronemap from "./Dronemap";
 import Button from "./button";
+import Dronescreen from "./Dronescreen";
+import Dropdown from "./Dropdown";
+import Krakenscreen from "./Krakenscreen";
 
 function App() {
+    //stateful variables for Drone
     const [drone, setdrone] = useState({ alt: 0, lng: 0, lat: 0, hdg: 0 });
     const [radio, setradio] = useState({
         lat: -35.3632621,
         lng: 149.1651374,
     });
-    const [mode, setmode] = useState("none");
-    const [status, setstatus] = useState("none");
-    const [color, setcolor] = useState("none");
+
+    //stateful variables for antenna
     const [antenna, setantenna] = useState({
         lng: 0,
         lat: 0,
@@ -22,19 +25,35 @@ function App() {
         toradio: 0,
         reading: 0,
     });
+
+    //kraken stateful variables
+    const [DFdata, setDFdata] = useState("none");
+    const [plotting, setplotting] = useState(false);
+
+    //stateful variables for mode and status display
+    const [mode, setmode] = useState("none");
+    const [status, setstatus] = useState("none");
+    const [color, setcolor] = useState("none");
+
+    //stateful variables for Dronemodes
     const [circledata, setcircledata] = useState([]);
     const [circlespeed, setcirclespeed] = useState(50);
     const [sweepwidth, setsweepwidth] = useState(160);
     const [sweepdata, setsweepdata] = useState([]);
     const [datarate, setdatarate] = useState(20);
     const [connected, setconnected] = useState(0);
+    const [sensorconnected, setsensorconnected] = useState(0);
     const [movespeed, setmovespeed] = useState(8.5);
 
-    //map state
+    //stateful vaiables for map
     const [mappos, setmapppos] = useState({
         lat: -35.3632621,
         lng: 149.1652374,
     });
+
+    //global stateful variables
+    const [vehicle, setvehicle] = useState("Kraken");
+    const [vehicles, setvehicles] = useState(["None", "Radiohound", "Kraken"]);
 
     async function getData() {
         await fetch("http://localhost:3003/data")
@@ -44,8 +63,11 @@ function App() {
                 setantenna(data.antenna);
                 setstatus(data.program.status);
                 setconnected(data.program.connected);
+                setsensorconnected(data.antenna.connected);
                 setcircledata(data.circledata);
                 setsweepdata(data.sweepdata);
+                setDFdata([...data.DFdata.measurements]);
+                console.log(data.DFdata.measurements);
             });
     }
 
@@ -87,7 +109,7 @@ function App() {
         var color;
         switch (status) {
             case "none":
-                color = "lightgrey";
+                color = "var(--light)";
                 break;
             case "inprogress":
                 color = "yellow";
@@ -113,7 +135,13 @@ function App() {
     return (
         <>
             <div className="header">
-                <div style={{ flex: 1 }}>&nbsp;</div>
+                <div style={{ flex: 1 }}>
+                    <Dropdown
+                        value={vehicle}
+                        values={vehicles}
+                        setvalue={setvehicle}
+                    ></Dropdown>
+                </div>
                 <div
                     style={{
                         textAlign: "center",
@@ -123,15 +151,34 @@ function App() {
                 >
                     RadioHawk
                 </div>
+
                 <div
                     style={{
-                        flex: 1,
-                        fontFamily: "barlow",
+                        flex: 0.5,
+                        fontFamily: "system-ui",
                         color: connected ? "lightgreen" : "red",
-                        fontSize: 30,
+                        fontSize: 20,
                     }}
                 >
-                    {connected ? "CONNECTED" : "DISCONNECTED"}
+                    System: {connected ? "CONNECTED" : "DISCONNECTED"}
+                </div>
+                <div
+                    style={{
+                        flex: 0.4,
+                        fontFamily: "system-ui",
+                        color: sensorconnected ? "lightgreen" : "red",
+                        fontSize: 20,
+                    }}
+                >
+                    Sensor: {sensorconnected ? "CONNECTED" : "DISCONNECTED"}
+                    {!sensorconnected && (
+                        <Button
+                            onpress={() => {
+                                sendCommand("connectsensor", 0);
+                            }}
+                            text="Connect"
+                        ></Button>
+                    )}
                 </div>
             </div>
             <div className="container">
@@ -158,224 +205,30 @@ function App() {
                         Gain: {antenna.gain}
                         <br></br>
                         Power Reading: {antenna.reading.toFixed(2)}
-                    </div>
-                    <div className="box" id="parameters">
-                        <div className="divider">Parameters</div>
-                        Mode Select
-                        <select
-                            type="dropdown"
-                            onChange={(e) => {
-                                setmode(e.target.value);
-                            }}
-                            value={mode}
-                            style={{
-                                width: "80%",
-                                margin: "auto",
-                                marginTop: 0,
-                                marginBottom: 0,
-                            }}
-                        >
-                            <option value="none">None</option>
-                            <option value="locationfollow">
-                                Location Follow
-                            </option>
-                            <option value="radiofollow">Radio Follow</option>
-                            <option value="eyeofender">Eye of Ender</option>
-                            <option value="debug">Debug</option>
-                        </select>
                         <br></br>
-                        {/* mode selector*/}
-                        {mode == "none" && <div>Select a Mode</div>}
-                        {mode == "locationfollow" && (
-                            <div>
-                                Movement Speed (m/s): {movespeed}
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={18}
-                                    value={movespeed * 2}
-                                    onChange={(e) => {
-                                        setmovespeed(e.target.value / 2);
-                                        sendCommand(
-                                            "setmovespeed",
-                                            e.target.value / 2
-                                        );
-                                    }}
-                                ></input>
-                            </div>
-                        )}
-                        {mode == "debug" && (
-                            <>
-                                <Button
-                                    text="Collect"
-                                    onpress={() => {
-                                        sendCommand("setcollecting", 1);
-                                    }}
-                                ></Button>
-                                <br></br>
-                                <Button
-                                    text="Stop Collect"
-                                    onpress={() => {
-                                        sendCommand("setcollecting", 0);
-                                    }}
-                                ></Button>
-                            </>
-                        )}
-                        {mode == "radiofollow" && (
-                            <>
-                                {status == "searching" ||
-                                status == "tracking" ? (
-                                    <Button
-                                        onpress={() => {
-                                            sendCommand("follow", 0);
-                                        }}
-                                        text={"Stop"}
-                                    ></Button>
-                                ) : (
-                                    <Button
-                                        onpress={() => {
-                                            sendCommand("follow", 1);
-                                        }}
-                                        text={"Begin"}
-                                    ></Button>
-                                )}
-                                <br></br>
-                                <Button
-                                    onpress={() => {
-                                        sendCommand("clearlines", 1);
-                                        setsweepdata([]);
-                                    }}
-                                    text={"Clear lines"}
-                                ></Button>
-                                Rotation Speed (degrees/s): {circlespeed}
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={80}
-                                    value={circlespeed}
-                                    onChange={(e) => {
-                                        setcirclespeed(e.target.value);
-                                        sendCommand(
-                                            "setrotationspeed",
-                                            e.target.value
-                                        );
-                                    }}
-                                ></input>
-                                Movement Speed (m/s): {movespeed}
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={18}
-                                    value={movespeed * 2}
-                                    onChange={(e) => {
-                                        setmovespeed(e.target.value / 2);
-                                        sendCommand(
-                                            "setmovespeed",
-                                            e.target.value / 2
-                                        );
-                                    }}
-                                ></input>
-                                Datarate (hz): {datarate}
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={30}
-                                    value={datarate}
-                                    onChange={(e) => {
-                                        setdatarate(e.target.value);
-                                        sendCommand(
-                                            "setdatarate",
-                                            e.target.value
-                                        );
-                                    }}
-                                ></input>
-                                Sweepwidth (degrees): {sweepwidth}
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={360}
-                                    value={sweepwidth}
-                                    disabled={
-                                        status == "tracking" ? true : false
-                                    }
-                                    onChange={(e) => {
-                                        setsweepwidth(e.target.value);
-                                        sendCommand(
-                                            "setsweepwidth",
-                                            e.target.value
-                                        );
-                                    }}
-                                ></input>
-                                <div>
-                                    Radiomode:
-                                    <Button
-                                        text="Simulation"
-                                        onpress={() => [
-                                            sendCommand("setradiomode", 0),
-                                        ]}
-                                    ></Button>
-                                    <br></br>
-                                    <Button
-                                        text="Real"
-                                        onpress={() => [
-                                            sendCommand("setradiomode", 1),
-                                        ]}
-                                    ></Button>
-                                </div>
-                            </>
-                        )}
-                        {mode == "eyeofender" && (
-                            <>
-                                <Button
-                                    onpress={() => {
-                                        sendCommand("circle", 1);
-                                    }}
-                                    text={"Circle"}
-                                ></Button>
-                                <br></br>
-                                <Button
-                                    onpress={() => {
-                                        sendCommand("clearlines", 1);
-                                    }}
-                                    text={"Clear lines"}
-                                ></Button>
-                                Circle Speed (degrees/s): {circlespeed}
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={50}
-                                    value={circlespeed}
-                                    onChange={(e) => {
-                                        setcirclespeed(e.target.value);
-                                        sendCommand(
-                                            "setrotationspeed",
-                                            e.target.value
-                                        );
-                                    }}
-                                ></input>
-                                Datarate (hz): {datarate}
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={30}
-                                    value={datarate}
-                                    onChange={(e) => {
-                                        setdatarate(e.target.value);
-                                        sendCommand(
-                                            "setdatarate",
-                                            e.target.value
-                                        );
-                                    }}
-                                ></input>
-                            </>
-                        )}
+                        Collecting: {antenna.collecting ? "🟢" : "🔴"}
+                        <br></br>
+                        Center Frequency: {antenna.frequency}
                     </div>
-                    <div style={{ backgroundColor: "white", width: "100%" }}>
-                        <span style={{ color: "green" }}>
-                            Radio Direction: {antenna.toradio.toFixed(2)},{" "}
-                        </span>
-                        <span style={{ color: "blue" }}>Heading</span>
-                    </div>
+
+                    {vehicle == "Radiohound" && (
+                        <Dronescreen
+                            drone={drone}
+                            antenna={antenna}
+                            mode={mode}
+                            setmode={setmode}
+                        ></Dronescreen>
+                    )}
+                    {vehicle == "Kraken" && (
+                        <Krakenscreen
+                            drone={drone}
+                            antenna={antenna}
+                            mode={mode}
+                            setmode={setmode}
+                            sendCommand={sendCommand}
+                            setplotting={setplotting}
+                        ></Krakenscreen>
+                    )}
                 </div>
                 <div className="right" style={{ borderColor: color }}>
                     <div
@@ -448,6 +301,8 @@ function App() {
                         sweepdata={sweepdata}
                         status={status}
                         mappos={mappos}
+                        DFdata={DFdata}
+                        plotting={plotting}
                     ></Dronemap>
                 </div>
             </div>

@@ -23,7 +23,9 @@ client.connect('radiohound.ee.nd.edu', 1883, 60) # Requires firewall access
 print("CLIENT1 CONNECTED") 
 '''
 
-#create radio client
+#--------------RADIO CLIENT CONNECTION---------------
+
+'''
 client2 = mqtt.Client()
 print("CLIENT2 CONNECTING...")  
 
@@ -36,7 +38,9 @@ while(1):
         break
     except:
         print("RADIOHOUND CONNECTING...")
+'''
 
+#--------------MAVLINK Connection---------------
 
 # Start a connection listening on a UDP port
 print("MAKING MAVLINK CONNECTION...")
@@ -49,6 +53,7 @@ else:
     the_connection = mavutil.mavlink_connection("/dev/ttyAMA0", baud=921600, source_system=1, source_component=191)
 
 
+print("Here")
 # Wait for the first heartbeat
 #   This sets the system and component ID of remote system for the link
 the_connection.wait_heartbeat()
@@ -56,17 +61,18 @@ the_connection.wait_heartbeat()
 the_connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
 print("Heartbeat from system (system %u component %u)" % (the_connection.target_system, the_connection.target_component))
 
+client2 = None
 #create drone object
-Drone = Hounddrone(the_connection, client2, "e415f6f662e5")
+Drone = Hounddrone(the_connection, client2, radiomode="Kraken", radioaddress="e415f6f662e5")
 
 #prompt flight controller what messages to stream and how fast
-#global_position_int
+#global_position_int -- tell FC to stream position
 Drone.requestMessageStream(33, 10)
 
 time.sleep(1) #sleep to allow drone to start producing relevant data
 
 
-
+#--------------RadioSim Config---------------
 #configure radio simulation
 scene = RadioScene()
 
@@ -78,6 +84,9 @@ antenna = scene.addAntenna(180,0,10)
 
 #attatch antenna to drone so the position is tracked in hounddrone.startstream
 Drone.attatch(antenna)
+
+
+#--------------Main Code for Drone Control---------------
 
 #define modes
 #none, locationfollow, radiofollow, eyeofender
@@ -340,7 +349,8 @@ def main():
                             maxline = line
                     maxlines.append(maxline)          
                 pass
-            
+        time.sleep(1/100)
+        #run at 100 fps
 
 #get angle between two angles
 def angleTo(a1, a2, flag):
@@ -350,67 +360,10 @@ def angleTo(a1, a2, flag):
     else:
         return out
 
-#mqtt communication handling
-'''
-client.subscribe("drone/command")
+#--------------Communication Handling---------------
 
-def onmessage(client, userdata, message):
-    global status
-    global mode
-    global circledata
-    global maxlines
-    global sweepwidth
-    global sweepdata
-    global ROTATIONSPEED
-    global DATARATE
-
-    msg = json.loads(message.payload)
-
-    if(msg.get("message") == "circle"):
-        status = "initcircle"
-    if(msg.get("message") == "clearlines"):
-        circledata, maxlines, sweepdata = [], [], []
-    if(msg.get("message") == "setrotationspeed"):
-        ROTATIONSPEED = int(msg.get("value"))
-    if(msg.get("message") == "setdatarate"):
-        Drone.radiorate = int(msg.get("value"))
-        DATARATE = int(msg.get("value"))
-    if(msg.get("message") == "setsweepwidth"):
-        sweepwidth = int(msg.get("value"))
-    if(msg.get("message") == "follow"):
-        status = "initsearch"
-    if(msg.get("message") == "setmode"):
-        mode = msg.get("value")
-    if(msg.get("message") == "stopfollow"):
-        Drone.setmode(5)
-        Drone.stopCollecting()
-        status = "none"
-        sweepdata = []
-    if(msg.get("message") == "setradiopos"):
-        data = json.loads(msg.get("value"))
-        radio.lat = data.get("lat")
-        radio.lng = data.get("lng")
-        return "amazing"
-
-
-client.on_message = onmessage
-
-def sendData():
+def sendData(): #send data from drone to groundstation
     rate = 10
-    while(1):
-        data = {"drone": {"alt": Drone.alt, "lng":Drone.lng,"lat":Drone.lat, "hdg": Drone.hdg},
-        "antenna": {"lng":antenna.lng, "lat":antenna.lat, "hdg": antenna.hdg, "ang": antenna.angle, "gain": antenna.gain, "toradio": antenna.toradio, "reading": antenna.getData()},
-        "program": {"status":status},
-        "circledata": {"circle": circledata, "maxlines": maxlines},
-        "sweepdata": {"sweep": sweepdata, "target": radiodirection}}
-
-        client.publish("drone/data", payload = json.dumps(data))
-
-        time.sleep(1/rate)
-'''
-
-def sendData():
-    rate = 3
     while(1):
 
         #send data
@@ -425,7 +378,7 @@ def sendData():
         #send status data
         Drone.sendText(0,0,f'status:{status}')
 
-        Drone.sendData("antenna", Drone.radiodata)
+        Drone.sendData()
 
         time.sleep(1/rate)
     
@@ -537,6 +490,13 @@ def receiveData():
                 elif msg.param4:
                     print("simulation")
                     RADIOSOURCE = "simulation"
+                elif msg.param5:
+                    print("Connecting Sensor")
+                    Drone.kraken.start()
+                elif msg.param6:
+                    print("setfreq?:", msg.param6)
+            elif msg.command == 33341:
+                Drone.kraken.setfreq(int(msg.param1))
     return "amazing" 
                 
 

@@ -42,6 +42,8 @@ export default function Dronemap({
     sweepdata,
     status,
     mappos,
+    DFdata,
+    plotting,
 }) {
     return (
         <APIProvider apiKey={"AIzaSyAPlCn3s3ZjpUwKW6fqoKm5lXxpG3eHBCw"}>
@@ -51,6 +53,7 @@ export default function Dronemap({
                 gestureHandling={"greedy"}
                 defaultZoom={18}
                 disableDefaultUI={true}
+                colorScheme="DARK"
                 mapId={"56089b1b34f21274 "}
             >
                 <AdvancedMarker
@@ -78,7 +81,13 @@ export default function Dronemap({
                     onClick={() => alert("marker was clicked!")}
                     title={"Drone"}
                 >
-                    <Pin scale={1.6}>🚁</Pin>
+                    <Pin
+                        background={"#8E9DB4"}
+                        borderColor={"#CCE0FF"}
+                        scale={1.6}
+                    >
+                        🚁
+                    </Pin>
                 </AdvancedMarker>
                 <AdvancedMarker
                     position={{ lat: antenna.lat, lng: antenna.lng }}
@@ -93,7 +102,6 @@ export default function Dronemap({
                         📡
                     </Pin>
                 </AdvancedMarker>
-
                 {/*headingline*/}
                 <Polyline
                     path={[
@@ -111,7 +119,80 @@ export default function Dronemap({
                     strokeOpacity={0.8}
                     strokeWeight={2}
                 />
-
+                {/*Current DFline*/}
+                {DFdata.length > 0 && (
+                    <Polyline
+                        path={[
+                            {
+                                lat: DFdata[DFdata.length - 1].lat * 1e-7,
+                                lng: DFdata[DFdata.length - 1].lng * 1e-7,
+                            },
+                            {
+                                lat:
+                                    DFdata[DFdata.length - 1].lat * 1e-7 +
+                                    0.0005 *
+                                        Math.cos(
+                                            ((DFdata[DFdata.length - 1].hdg +
+                                                DFdata[DFdata.length - 1]
+                                                    .data) *
+                                                Math.PI) /
+                                                180
+                                        ),
+                                lng:
+                                    DFdata[DFdata.length - 1].lng * 1e-7 +
+                                    0.0005 *
+                                        Math.sin(
+                                            ((DFdata[DFdata.length - 1].hdg +
+                                                DFdata[DFdata.length - 1]
+                                                    .data) *
+                                                Math.PI) /
+                                                180
+                                        ),
+                            },
+                        ]}
+                        strokeColor="#CCE0FF"
+                        strokeOpacity={0.8}
+                        strokeWeight={3}
+                    />
+                )}
+                {/*All DFlines*/}
+                {DFdata.length > 0 &&
+                    plotting &&
+                    DFdata.map((line, index) => {
+                        return (
+                            <Polyline
+                                key={index}
+                                path={[
+                                    {
+                                        lat: line.lat * 1e-7,
+                                        lng: line.lng * 1e-7,
+                                    },
+                                    {
+                                        lat:
+                                            line.lat * 1e-7 +
+                                            0.002 *
+                                                Math.cos(
+                                                    ((line.hdg + line.data) *
+                                                        Math.PI) /
+                                                        180
+                                                ),
+                                        lng:
+                                            line.lng * 1e-7 +
+                                            0.002 *
+                                                Math.sin(
+                                                    ((line.hdg + line.data) *
+                                                        Math.PI) /
+                                                        180
+                                                ),
+                                    },
+                                ]}
+                                strokeColor="#CCE0FF"
+                                strokeOpacity={0.8}
+                                strokeWeight={3}
+                            />
+                        );
+                    })}
+                /*}
                 {/*lines for circledata*/}
                 {circledata.circle &&
                     circledata.circle.map((measurement, index) => {
@@ -179,7 +260,6 @@ export default function Dronemap({
                             ></Polyline>
                         );
                     })}
-
                 {/*lines for sweep*/}
                 {sweepdata.sweep &&
                     sweepdata.sweep.map((measurement, index) => {
@@ -216,7 +296,6 @@ export default function Dronemap({
                             ></Polyline>
                         );
                     })}
-
                 {sweepdata.target && status == "tracking" && (
                     <Polyline
                         path={[
@@ -241,7 +320,6 @@ export default function Dronemap({
                         strokeWeight={2}
                     ></Polyline>
                 )}
-
                 {/*line to radio*/}
                 <Polyline
                     path={[

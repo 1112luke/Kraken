@@ -45,10 +45,11 @@ def connectcountdown():
 
 #holds drone data to be sent from program to drone. Currently the python program sends at 10 hz and the frontend requests at 10 hz and I just hope they kinda matchup. No communication of the datarate is implemented.
 dronedata = {"drone": {"alt": 0, "lng":0,"lat":0, "hdg": 0,},
-        "antenna": {"lng":0, "lat":0, "hdg": 0, "ang": 0, "gain": 0, "toradio": 0, "reading": 0},
+        "antenna": {"lng":0, "lat":0, "hdg": 0, "ang": 0, "gain": 0, "toradio": 0, "reading": 0, "collecting": 0, "connected": 0, "frequency": 0},
         "program": {"status":"", "connected": 0},
         "circledata": {"circle": None, "maxlines": None},
-        "sweepdata": {"sweep": None, "target": None}}
+        "sweepdata": {"sweep": None, "target": None},
+        "DFdata": {"measurements": []}}
 
 def getData():
     global dronedata
@@ -56,6 +57,10 @@ def getData():
     global counter
 
     GPI = None
+
+    collected = set()
+    first = 1
+    offset = 0
 
     while(1):
         #constantly get messages and set attributes
@@ -66,18 +71,48 @@ def getData():
                 print("NO POSITION INFORMATION")
                 
             if(msg.get_type() == "GLOBAL_POSITION_INT"):
-                dronedata["drone"]["alt"] = GPI.alt/1000
-                dronedata["drone"]["lat"] = GPI.lat*1E-7
-                dronedata["drone"]["lng"] = GPI.lon*1E-7
-                dronedata["drone"]["hdg"] = GPI.hdg/100
+                try:
+
+                    dronedata["drone"]["alt"] = GPI.alt/1000
+                    dronedata["drone"]["lat"] = GPI.lat*1E-7
+                    dronedata["drone"]["lng"] = GPI.lon*1E-7
+                    dronedata["drone"]["hdg"] = GPI.hdg/100
+                except:
+                    print("Connecting...")
                 #print(GPI.lat*1E-7)
                 #print(GPI.lon*1E-7)
 
-            if(msg.get_type() == "COMMAND_LONG"):
+            if(msg.get_type() == "COMMAND_INT"):
                 #print(msg.command)
+                #get kraken line data and store as array
                 if(msg.command == 33339):
                     print("antenna", msg.param1)
+                    print("collectnum", msg.param2)
+                    print("lat", msg.x)
+                    print("lat", msg.y)
                     dronedata["antenna"]["reading"] = msg.param1
+                    dronedata["antenna"]["collecting"] = msg.param4
+
+                    if(first):
+                        first = 0
+                        offset = msg.param2
+
+                    if(msg.param2 not in collected):
+                        #add it to the list
+                        collected.add(msg.param2)
+                        index = int(msg.param2)
+                        measurement = {"lat": msg.x, "lng": msg.y, "hdg": msg.param3, "data": msg.param1}
+
+                        dronedata["DFdata"]["measurements"].append(measurement)
+
+            if(msg.get_type() == "COMMAND_LONG"):
+                #print(msg.command)
+                #get kraken line data and store as array
+                if(msg.command == 33340):
+                    dronedata["antenna"]["connected"] = msg.param1
+                    dronedata["antenna"]["frequency"] = msg.param2
+                        
+            
             if msg.get_type() == "HEARTBEAT":
                 if(msg.get_srcComponent() == 191):
                     counter = 300
@@ -179,6 +214,7 @@ def Server():
             param1 = 1
 
         elif command == "clearlines":
+            dronedata["DFdata"]["measurements"] = []
             cmdnum = 33337
             param2 = 1
 
@@ -196,12 +232,20 @@ def Server():
             else:
                 print("simulation")
                 param4 = 1
+        elif command == "connectsensor":
+            cmdnum = 33338
+            param5 = 1
+        elif command == "setfrequency":
+            cmdnum = 33341
+            param1 = payload["value"]
 
 
         #send message
-        the_connection.mav.command_long_send(1, 191, cmdnum, 0, float(param1), float(param2), float(param3), float(param4), float(param5), float(param6), float(param7))
-        #send mqtt
-        #client.publish("drone/command", payload=json.dumps(payload))
+        #spam 20 times
+        for i in range(50):
+            the_connection.mav.command_long_send(1, 191, cmdnum, 0, float(param1), float(param2), float(param3), float(param4), float(param5), float(param6), float(param7))
+            time.sleep(1/100)
+
         return "amazing"
 
     
@@ -261,10 +305,18 @@ command table
     param2: stop collect
     param3: setradiomode real
     param4: setradiomode simulated
+    param5: connectsensor
+
+33341: set frequency
+    param1: frequency (MHz)
 
 
 ------Incoming------
-33339: antenna power data
-    param1: flaot
-
+33339: kraken antenna data
+    param1: flaot (antenna d)
+    param2: 
+    param3: hdg
+    param4: collecting, bool
+33340: agnostic sensor data
+    param1: connected (bool)
 '''

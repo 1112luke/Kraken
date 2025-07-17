@@ -5,13 +5,14 @@ import json
 from threading import Timer
 import threading
 from parseData import parseData
+from Kraken import Kraken
 
 def finishCircle(self, first, speed):
     self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component,115,0,first,speed,1,0,0,0,0)
 
 
 class Hounddrone:
-    def __init__(self, connection, client, radioaddress):
+    def __init__(self, connection, client=None, radiomode="Kraken", radioaddress = None):
         self.boottime = time.time()
         self.connection = connection
         self.alt = 0
@@ -24,47 +25,70 @@ class Hounddrone:
         self.antennas = []
         self.count = 0
         self.radiorate = 6
-        self.radiodata = {"data": 0, "hdg": 0, "lat": 0, "lng": 0}
+        self.radiodata = {"data": 0, "hdg": 0, "lat": 0, "lng": 0, "num": 0}
         self.collecting = False
+        self.radiomode = radiomode
+
+        #initialize radio
+        if (self.radiomode == "Kraken"):
+            self.kraken = Kraken()
+            self.kraken.start()
 
         
         def onmessage(client, userdata, message):
-            self.radiodata = {"data": parseData(message), "hdg": self.hdg, "lat":self.lat, "lng": self.lng}
-            print("RADIODATA RECEIVED", self.radiodata)
+            try:
+                print("Parsed: ", parseData(message))
+                self.radiodata = {"data": parseData(message), "hdg": self.hdg, "lat":self.lat, "lng": self.lng}
+                #print("RADIODATA RECEIVED", self.radiodata)
+            except:
+                print("failed to parse radio data")
 
         def collect():
-            print("COLLECT")
 
-            if(self.client != 0):
-                #send mqtt request and wait for response
-                payload = { 
-                    'task_name': 'tasks.legacy.rf.scan.periodogram',
-                    'arguments': 
-                    {
-                        "output_topic":f"radiohound/clients/data/{self.radioaddress}",
-                        "fmin":5730e6,
-                        "fmax":5734e6,
-                        "N_periodogram_points":512,
-                        "gain":1,
-                        "batch_id":0,# Can be set to link multiple scans together.  Not implemented in GUI yet.  
-                    },
-                }   
+            print("RADIOMODE", self.radiomode)
+            print("COLLECT")
+            if(self.radiomode != "Kraken"):
+                if(self.client != 0):
+                    #send mqtt request and wait for response
+                    payload = {
+                        'task_name': 'tasks.legacy.rf.scan.periodogram',
+                        'arguments': 
+                        {
+                            "output_topic":f"radiohound/clients/data/{self.radioaddress}",
+                            "fmin":5730e6,
+                            "fmax":5734e6,
+                            "N_periodogram_points":512,
+                            "gain":1,
+                            "batch_id":0,# Can be set to link multiple scans together.  Not implemented in GUI yet.  
+                        },
+                    }   
+                    while(1):
+                        try:
+                            if(self.collecting):
+                                self.client.publish(f"radiohound/clients/command/{self.radioaddress}", payload=json.dumps(payload))
+                                #self.client.publish(f"radiohound/clients/command/", payload=json.dumps(payload))
+                                time.sleep(1/self.radiorate)
+                                #print("sent collect request")
+                        except:
+                            print("Failed to publish to mqtt")
+            elif (self.radiomode == "Kraken"):
                 while(1):
                     try:
                         if(self.collecting):
-                            self.client.publish(f"radiohound/clients/command/{self.radioaddress}", payload=json.dumps(payload))
-                            #self.client.publish(f"radiohound/clients/command/", payload=json.dumps(payload))
-                            time.sleep(1/self.radiorate)
-                            #print("sent collect request")
-                    except:
-                        print("Failed to get data")
+                            if("DATA:", self.kraken.gethasdata()):
+                                self.kraken.getdata()
+                                self.radiodata = {"data": self.kraken.getdata(), "hdg": self.hdg, "lat":self.lat, "lng": self.lng, "num": self.kraken.getcollectnum()}
+                    except Exception as error:
+                        print("UNABLE TO GET KRAKEN DATA: ", error)
+                    time.sleep(1/10)
                             
 
 
-        self.client.subscribe(f"radiohound/clients/data/{self.radioaddress}")
-        #self.client.subscribe(f"radiohound/clients/data/#")
-        self.client.on_message = onmessage
-        self.client.loop_start()
+        if(self.client):
+            self.client.subscribe(f"radiohound/clients/data/{self.radioaddress}")
+            #self.client.subscribe(f"radiohound/clients/data/#")
+            self.client.on_message = onmessage
+            self.client.loop_start()
 
         #run radiothread checker
         radiothread = threading.Thread(target = collect)
@@ -127,10 +151,12 @@ class Hounddrone:
         severity = mavutil.mavlink.MAV_SEVERITY_INFO
         self.connection.mav.statustext_send(severity, text)
     
-    def sendData(self, name, value):
-        if(name == 'antenna'):
-            #print("sent data", float(self.radiodata["data"]))
-            self.connection.mav.command_long_send(0, 0, 33339, 0, float(self.radiodata["data"]), 0, 0, 0, 0, 0, 0)
+    def sendData(self):
+        #send antenna data
+        self.connection.mav.command_int_send(0, 0, 0, 33339, 0, 0, float(self.radiodata["data"]), float(self.radiodata["num"]), float(self.radiodata["hdg"]), float(self.collecting), int(self.lat*1E7), int(self.lng*1E7), 0)
+
+        #send sensor connection data
+        self.connection.mav.command_long_send(0,0,33340,0,float(self.kraken.connected), float(self.kraken.freq),0,0,0,0,0)
 
     def startCollecting(self):
         self.collecting = True
