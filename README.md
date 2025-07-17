@@ -9,7 +9,7 @@ Kraken is a radio direction finder system, made specifically for locating LoRa m
 - Ethernet Connectivity
 - Input Voltage: 5v - 25.2v
 - Effective Range: 1000ft -> Search Diameter 2000ft
-- A PC or Laptop with Docker installed.
+- A PC or Laptop with [Docker](https://www.docker.com/) installed.
 
 ## Usage:
 
@@ -17,9 +17,29 @@ Kraken is a radio direction finder system, made specifically for locating LoRa m
 
 In Standalone Mode, the device has no information about its location. Only estimated transmitter direction is collected. This mode was used extensively for testing, and can be used in scenarious where the operator is mobile with the Kraken.
 
-First, pull the groundstation docker container from github with the following command
+First, ssh establish a network connection to the Kraken, and ensure the host device has an ip with subnet 10 (i.e. 192.168.10.X).
 
-    command
+Next, remote into the Kraken with the following command:
+
+    ssh krakenrf@192.168.10.33
+    
+This is the fixed IP address for the Kraken.
+
+Once connected, "release" the Kraken:
+
+    ./kraken-DOA/release.sh
+
+The Kraken is now active, and connections to the groundstation program can be made.
+
+Pull the groundstation docker container from github with the following command:
+
+    sudo docker pull 1112luke/krakenground
+
+To run in standalone mode, execute the following:
+
+    sudo docker run -it -p 5173:5173 -p 14553:14553/udp 1112luke/krakenground
+
+The navigate to the local web url, and the interface will be visible. Upon connection, the meter will begin tracking the estimated direction of the emitter.
 
 ### UAV integration Mode
 
