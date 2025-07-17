@@ -17,25 +17,25 @@ Kraken is a radio direction finder system, made specifically for locating LoRa m
 
 In Standalone Mode, the device has no information about its location. Only estimated transmitter direction is collected. This mode was used extensively for testing, and can be used in scenarious where the operator is mobile with the Kraken.
 
-First, ssh establish a network connection to the Kraken, and ensure the host device has an ip with subnet 10 (i.e. 192.168.10.X).
+1. ssh establish a network connection to the Kraken, and ensure the host device has an ip with subnet 10 (i.e. 192.168.10.X).
 
-Next, remote into the Kraken with the following command:
+2. Remote into the Kraken with the following command:
 
     ssh krakenrf@192.168.10.33
     
 This is the fixed IP address for the Kraken.
 
-Once connected, "release" the Kraken:
+3. Once connected, "release" the Kraken:
 
     ./kraken-DOA/release.sh
 
 The Kraken is now active, and connections to the groundstation program can be made killing the terminal with this connection will deactivate the Kraken.
 
-Now, in a new terminal on the groundstation device with docker installed, pull the groundstation docker container from github with the following command:
+4. In a new terminal on the groundstation device with docker installed, pull the groundstation docker container from github with the following command:
 
     sudo docker pull 1112luke/krakenground
 
-To run in standalone mode, execute the following:
+5. To run in standalone mode, execute the following:
 
     sudo docker run -it -p 5173:5173 -p 14553:14553/udp 1112luke/krakenground
 
