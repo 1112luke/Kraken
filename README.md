@@ -66,23 +66,34 @@ This is the fixed IP address for the companion computer.
 
         ~/connect.sh
   
-7.   The companion computer should now be broadcasting all mavlink data from the flight computer, now with injected direction data, over the mavlink connection specified in the mavlink-router config file.
+6.   The companion computer should now be broadcasting all mavlink data from the flight computer, now with injected direction data, over the mavlink connection specified in the mavlink-router config file.
 
-8. In a new terminal instance on the groundstation computer, complete steps 2-4 from the Standalone Mode setup listed above
+7. In a new terminal instance on the groundstation computer, complete steps 2-4 from the Standalone Mode setup listed above
 
-9. On the groundstation computer, install [mavproxy](https://ardupilot.org/mavproxy/docs/getting_started/download_and_installation.html) and run it with the following command:
+8. On the groundstation computer, install [mavproxy](https://ardupilot.org/mavproxy/docs/getting_started/download_and_installation.html) and run it with the following command:
 
         mavproxy.py --master <mavlinksource> --baud 57600 --out 127.0.0.1:14553 --out 127.0.0.1:14550 --streamrate=-1
    where <mavlinksource> connects to the endpoint specified in the companion computer's mavlink-router config file. In our case, <mavlinksource> is tcp:192.168.10.2:14553
    the outbound route to 14553 is for the krakenground docker container. the route to 14550 is the default route for Qgroundcontrol, allowing both groundstation software and Kraken software to interface over the same Mavlink connection.
    
-10. To run the groundstation software in UAV mode, execute the following 
+9. To run the groundstation software in UAV mode, execute the following 
 
         sudo docker run -it -p 5173:5173 -p 14553:14553/udp 1112luke/krakenground
 After navigating to the weburl listed, connection can be made to the payload, there are multiple features on the left side for control of the Kraken Payload
 
-## System Software Diagram
-For all current modes of operation, it is required that the Kraken be connected to the same tcp/ip network as the groundstation device. For our testing, we used Trellisware Ethernet radios, with the [Ghost 850](https://www.trellisware.com/trellisware-radios/tw-ghost-870/) mounted to the UAV. 
+## Accessing the Kraken's output Directly
+The Kraken has three interfaces by dafault:
+- TCP server (192.168.10.33:3333)
+        This interface outputs a start bit (0x33) followed by 360 data points, followed by a checksum. An example for reading from this interface is at */Examples/NUMBERVIEWERTCP.PY
+  
+- UDP broadcasts its current frequency on port 3331 as a string every 0.5 seconds
+
+- INPUT: The frequency of the Kraken can be changed by sending via udp to 192.168.10.33 port 3332 “FREQ:<freq>” where freq is the desired frequency.
+
+
+<img width="468" height="65" alt="image" src="https://github.com/user-attachments/assets/27d7f1ae-727c-47c2-8e58-0c0dafc25286" />
+
+
 
 ## 
 For all current modes of operation, it is required that the Kraken be connected to the same tcp/ip network as the groundstation device. For our testing, we used Trellisware Ethernet radios, with the [Ghost 850](https://www.trellisware.com/trellisware-radios/tw-ghost-870/) mounted to the UAV. 
