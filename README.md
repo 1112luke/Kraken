@@ -31,7 +31,7 @@ This is the fixed IP address for the Kraken.
 
 3. Once connected, "release" the Kraken:
 
-    ./kraken-DOA/release.sh
+    ~/kraken-DOA/release.sh
 
 The Kraken is now active, and connections to the groundstation program can be made. Killing the terminal with this connection will deactivate the Kraken.
 
@@ -64,8 +64,7 @@ This is the fixed IP address for the companion computer.
 
 5. run the software on the companion computer by running:
 
-        cd /
-        ./connect.sh
+        ~/connect.sh
   
 7.   The companion computer should now be broadcasting all mavlink data from the flight computer, now with injected direction data, over the mavlink connection specified in the mavlink-router config file.
 
