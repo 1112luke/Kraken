@@ -62,17 +62,22 @@ This is the fixed IP address for the companion computer.
 
 4. The companion computer routes its mavlink packets using [mavlink-router](https://github.com/mavlink-router/mavlink-router). The endpoints can be edited by changing the config file at /etc/mavlink-router/main.conf. By default, it routes from the flight controller plugged into its USB port to a tcp server on port 14553
 
-5. run the software on the companion computer by calling ./connect. The companion computer should now be broadcasting all mavlink data from the flight computer, now with injected direction data, over the mavlink connection specified in the mavlink-router config file.
+5. run the software on the companion computer by running:
 
-6. In a new terminal instance on the groundstation computer, complete steps 2-4 from the Standalone Mode setup listed above
+        cd /
+        ./connect.sh
+  
+7.   The companion computer should now be broadcasting all mavlink data from the flight computer, now with injected direction data, over the mavlink connection specified in the mavlink-router config file.
 
-7. On the groundstation computer, install [mavproxy](https://ardupilot.org/mavproxy/docs/getting_started/download_and_installation.html) and run it with the following command:
+8. In a new terminal instance on the groundstation computer, complete steps 2-4 from the Standalone Mode setup listed above
+
+9. On the groundstation computer, install [mavproxy](https://ardupilot.org/mavproxy/docs/getting_started/download_and_installation.html) and run it with the following command:
 
         mavproxy.py --master <mavlinksource> --baud 57600 --out 127.0.0.1:14553 --out 127.0.0.1:14550 --streamrate=-1
    where <mavlinksource> connects to the endpoint specified in the companion computer's mavlink-router config file. In our case, <mavlinksource> is tcp:192.168.10.2:14553
    the outbound route to 14553 is for the krakenground docker container. the route to 14550 is the default route for Qgroundcontrol, allowing both groundstation software and Kraken software to interface over the same Mavlink connection.
    
-9. To run the groundstation software in UAV mode, execute the following 
+10. To run the groundstation software in UAV mode, execute the following 
 
         sudo docker run -it -p 5173:5173 -p 14553:14553/udp 1112luke/krakenground
 After navigating to the weburl listed, connection can be made to the payload, there are multiple features on the left side for control of the Kraken Payload
