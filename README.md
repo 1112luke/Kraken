@@ -17,7 +17,7 @@ Kraken is a radio direction finder system, made specifically for locating LoRa m
 
 In Standalone Mode, the device has no information about its location. Only estimated transmitter direction is collected. This mode was used extensively for testing, and can be used in scenarious where the operator is mobile with the Kraken.
 
-1. ssh establish a network connection to the Kraken, and ensure the host device has an ip with subnet 10 (i.e. 192.168.10.X).
+1. Establish a network connection to the Kraken, and ensure the host device has an ip with subnet 10 (i.e. 192.168.10.X). This can be done directly via an ethernet cable or with an ethernet radio system.
 
 2. Remote into the Kraken with the following command:
 
