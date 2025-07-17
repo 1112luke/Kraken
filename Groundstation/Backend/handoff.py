@@ -1,7 +1,6 @@
 #forward data from web interface to mqtt
 from flask import Flask, request
 from  flask_cors import CORS
-import paho.mqtt.client as mqtt
 import logging
 import json
 import threading
@@ -10,9 +9,7 @@ from pymavlink import mavutil
 
 counter = 0
 
-#client = mqtt.Client()                           # Create MQTT object
-#client.connect('radiohound.ee.nd.edu', 1883, 60) # Requires firewall access
-#client.subscribe("drone/data")
+print("Beginning Handoff.py...")
 
 # Start a connection listening on a UDP port
 the_connection = mavutil.mavlink_connection('udp:localhost:14553', source_system=3, source_component=3)
@@ -119,29 +116,19 @@ def getData():
                 
 
 
-'''
-#mqtt -> frontend
-def onmessage(client, userdata, message):
-    global dronedata
-    dronedata = message.payload.decode("utf-8")
-client.on_message = onmessage
-'''
-
-
 def Server():
     app = Flask(__name__)
     app.logger.setLevel(logging.ERROR)
     logging.getLogger('werkzeug').disabled = True
     CORS(app)
     
-    #radio > frontent
+    #Drone -> frontend
     @app.route('/data')
     def getDrone():
         global dronedata
         return dronedata
        
-    #frontend -> telemetry/mqtt
-
+    #frontend -> Drone
     @app.route("/command", methods = ['POST'])
     def doCommand():
         #global client

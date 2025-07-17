@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import "./App.css";
 import Dronemap from "./Dronemap";
-import Button from "./button";
+import Button from "./Button";
 import Dronescreen from "./Dronescreen";
 import Dropdown from "./Dropdown";
 import Krakenscreen from "./Krakenscreen";
@@ -146,10 +146,10 @@ function App() {
                     style={{
                         textAlign: "center",
                         fontSize: 40,
-                        fontFamily: "Nabla",
+                        fontFamily: "system-ui",
                     }}
                 >
-                    RadioHawk
+                    Kraken
                 </div>
 
                 <div
