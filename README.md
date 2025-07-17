@@ -9,7 +9,10 @@ Kraken is a radio direction finder system, made specifically for locating LoRa m
 - Ethernet Connectivity
 - Input Voltage: 5v - 25.2v
 - Effective Range: 1000ft -> Search Diameter 2000ft
-- A PC or Laptop with [Docker](https://www.docker.com/) installed.
+
+## Hardware Requirements
+
+For all current modes of operation, it is required that the Kraken be connected to the same tcp/ip network as the groundstation device. For our testing, we used Trellisware Ethernet radios, with the [Ghost 850](https://www.trellisware.com/trellisware-radios/tw-ghost-870/) mounted to the UAV. A PC or Laptop with [Docker](https://www.docker.com/) installed is required to act as the groundstation device.
 
 ## Usage:
 
@@ -44,9 +47,7 @@ Navigate to the local web url listed, and the interface will be visible. Upon co
 ### UAV integration Mode
 
 
-## Hardware Requirements
 
-For all current modes of operation, it is required that the Kraken be connected to the same tcp/ip network as the groundstation device. For our testing, we used Trellisware Ethernet radios, with the [Ghost 850](https://www.trellisware.com/trellisware-radios/tw-ghost-870/) mounted to the UAV. 
 
 ## System Software Diagram
 For all current modes of operation, it is required that the Kraken be connected to the same tcp/ip network as the groundstation device. For our testing, we used Trellisware Ethernet radios, with the [Ghost 850](https://www.trellisware.com/trellisware-radios/tw-ghost-870/) mounted to the UAV. 
