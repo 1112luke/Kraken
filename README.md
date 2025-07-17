@@ -9,10 +9,17 @@ Kraken is a radio direction finder system, made specifically for locating LoRa m
 - Ethernet Connectivity
 - Input Voltage: 5v - 25.2v
 - Effective Range: 1000ft -> Search Diameter 2000ft
+- A PC or Laptop with Docker installed.
 
 ## Usage:
+
 ### Standalone Mode
-In Standalone Mode, the device has no information about its location. 
+
+In Standalone Mode, the device has no information about its location. Only estimated transmitter direction is collected. This mode was used extensively for testing, and can be used in scenarious where the operator is mobile with the Kraken.
+
+First, pull the groundstation docker container from github with the following command
+
+    command
 
 ### UAV integration Mode
 
