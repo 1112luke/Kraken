@@ -2,4 +2,4 @@
 
 Kraken is a radio direction finder system, made specifically for locating LoRa modulated signals.
 
-<img width="744" alt="Screenshot 2025-02-24 at 10 45 57 AM" src="https://github.com/user-attachments/assets/7851344f-3624-42d8-bb89-954b8720c7d9" />
+<img width="1913" height="1237" alt="Screenshot 2025-07-17 at 1 02 31 PM" src="https://github.com/user-attachments/assets/6aeb6dee-e072-4d0f-a87f-53f8c0e95bd9" />
