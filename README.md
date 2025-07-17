@@ -21,7 +21,7 @@ In Standalone Mode, the device has no information about its location. Only estim
 
 2. Remote into the Kraken with the following command:
 
-    ssh krakenrf@192.168.10.33
+        ssh krakenrf@192.168.10.33
     
 This is the fixed IP address for the Kraken.
 
