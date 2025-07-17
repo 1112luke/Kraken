@@ -90,10 +90,7 @@ The Kraken has three interfaces by dafault:
 
 - INPUT: The frequency of the Kraken can be changed by sending via udp to 192.168.10.33 port 3332 “FREQ:<freq>” where freq is the desired frequency.
 
+These interfaces become active only after the kraken has been "released", as in steps 2-3 form the Standalone Mode setup above.
 
-<img width="468" height="65" alt="image" src="https://github.com/user-attachments/assets/27d7f1ae-727c-47c2-8e58-0c0dafc25286" />
-
-
-
-## 
-For all current modes of operation, it is required that the Kraken be connected to the same tcp/ip network as the groundstation device. For our testing, we used Trellisware Ethernet radios, with the [Ghost 850](https://www.trellisware.com/trellisware-radios/tw-ghost-870/) mounted to the UAV. 
+## Software overview
+This repository contains the software for the companion computer as well as all ground station software. The docker images for the companion computer and the grounstation are built from the Dockerfiles in the Edge and Groundstation folders, respectively. To change the docker containers, build from these dockerfiles and run the built images in place of 1112luke/drone and 1112luke/krakenground. An overview of all software and communications is shown:
