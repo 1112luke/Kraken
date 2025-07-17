@@ -90,7 +90,7 @@ The Kraken has three interfaces by dafault:
 
 - INPUT: The frequency of the Kraken can be changed by sending via udp to 192.168.10.33 port 3332 “FREQ:<freq>” where freq is the desired frequency.
 
-These interfaces become active only after the kraken has been "released", as in steps 2-3 form the Standalone Mode setup above. The Kraken python class from [Kraken/Edge]https://github.com/1112luke/Kraken/blob/main/Edge/Kraken.py may also be useful.
+These interfaces become active only after the kraken has been "released", as in steps 2-3 form the Standalone Mode setup above. The Kraken python class from [Kraken/Edge](https://github.com/1112luke/Kraken/blob/main/Edge/Kraken.py) may also be useful.
 
 ## Software overview
 This repository contains the software for the companion computer as well as all ground station software. The docker images for the companion computer and the grounstation are built from the Dockerfiles in the Edge and Groundstation folders, respectively. To change the docker containers, build from these dockerfiles and run the built images in place of 1112luke/drone and 1112luke/krakenground. An overview of all software and communications is shown:
