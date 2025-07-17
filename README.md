@@ -6,4 +6,7 @@ Kraken is a radio direction finder system, made specifically for locating LoRa m
 
 ## Modes of operation:
 - mode 1
+yes mode 1
 - mode 2
+yes mode 2
+- 
