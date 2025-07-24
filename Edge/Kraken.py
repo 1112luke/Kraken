@@ -65,18 +65,21 @@ class Kraken:
             self.freq = data.decode().strip()
 
     def start(self):
-        if not self.connected:
-            try:
-                self.s = socket.socket()
-                print(self.s)
-                self.s.connect(("192.168.10.33", 3333))
-                print("KRAKEN CONNNECTED")
-                self.connected = 1
-                self.collectdataflag = True
-                t1 = threading.Thread(target = self.collectdata)
-                t1.start()
-            except:
-                print("UNABLE TO CONNECT TO KRAKEN")
+        while(1):
+            if not self.connected:
+                try:
+                    print("Attempting Kraken Connection: ")
+                    self.s = socket.socket()
+                    print(self.s)
+                    self.s.connect(("192.168.10.33", 3333))
+                    print("KRAKEN CONNNECTED")
+                    self.connected = 1
+                    self.collectdataflag = True
+                    t1 = threading.Thread(target = self.collectdata)
+                    t1.start()
+                except:
+                    print("UNABLE TO CONNECT TO KRAKEN")
+            time.sleep(2)
 
     def setfreq(self, infreq):
         #create udp socket, send FREQ:self.freq to 192.168.10.33 port 3332

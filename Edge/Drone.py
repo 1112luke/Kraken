@@ -9,82 +9,19 @@ import logging
 import math
 import time
 
-#mqtt
-import paho.mqtt.client as mqtt
-
-#configure connections
-mavlink_router = True
-
-'''
-#create comm client
-client = mqtt.Client() 
-print("CLIENT1 CONNECTING...")                                                # Create MQTT object
-client.connect('radiohound.ee.nd.edu', 1883, 60) # Requires firewall access
-print("CLIENT1 CONNECTED") 
-'''
-
-#--------------RADIO CLIENT CONNECTION---------------
-
-'''
-client2 = mqtt.Client()
-print("CLIENT2 CONNECTING...")  
-
-#usb mqtt connection to radiohound
-#TODO -- make this go second and tell program it is connected to mavlink and then to radio, program won't run without radio though
-while(1):
-    try:
-        client2.connect('192.168.6.2', 1883, 60)
-        print("RADIOHOUND CONNECTED")
-        break
-    except:
-        print("RADIOHOUND CONNECTING...")
-'''
-
-#--------------MAVLINK Connection---------------
-
-# Start a connection listening on a UDP port
-print("MAKING MAVLINK CONNECTION...")
-#the_connection = mavutil.mavlink_connection("udp:localhost:14551", source_system=1, source_component=191)
-
-#connect to mavlink_router or mavlink at local port 14551. if not using mavlink router, connect directly to telemetry radio.
-if(mavlink_router):
-    the_connection = mavutil.mavlink_connection("udp:0.0.0.0:14551", source_system=1, source_component=191)
-else:
-    the_connection = mavutil.mavlink_connection("/dev/ttyAMA0", baud=921600, source_system=1, source_component=191)
-
-
-print("Here")
-# Wait for the first heartbeat
-#   This sets the system and component ID of remote system for the link
-the_connection.wait_heartbeat()
-
-the_connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
-print("Heartbeat from system (system %u component %u)" % (the_connection.target_system, the_connection.target_component))
-
-client2 = None
 #create drone object
-Drone = Hounddrone(the_connection, client2, radiomode="Kraken", radioaddress="e415f6f662e5")
+Drone = Hounddrone(radiomode="Kraken", radioaddress="e415f6f662e5")
+
+#initialize connection
+monitorthread = Thread(target = Drone.monitormavlink)
+Drone.connectmavlink()
+monitorthread.start()
 
 #prompt flight controller what messages to stream and how fast
 #global_position_int -- tell FC to stream position
 Drone.requestMessageStream(33, 10)
 
 time.sleep(1) #sleep to allow drone to start producing relevant data
-
-
-#--------------RadioSim Config---------------
-#configure radio simulation
-scene = RadioScene()
-
-#create a radio
-radio = scene.addRadio(10)
-
-#create an antenna
-antenna = scene.addAntenna(180,0,10)
-
-#attatch antenna to drone so the position is tracked in hounddrone.startstream
-Drone.attatch(antenna)
-
 
 #--------------Main Code for Drone Control---------------
 
@@ -111,6 +48,10 @@ sweepwidth = 160 #sweepwidth in degrees
 
 
 def main():
+    
+    
+    #active control of drone based on data
+    
     global lastmode
     global status
     global circledata
@@ -125,6 +66,8 @@ def main():
     global DATARATE
 
     while(1):
+        if(Drone.thread_stop):
+            break
         #check for change of mode
         if(lastmode != mode):
             #mode changed
@@ -365,7 +308,8 @@ def angleTo(a1, a2, flag):
 def sendData(): #send data from drone to groundstation
     rate = 10
     while(1):
-
+        if(Drone.thread_stop):
+            break
         #send data
         '''
         33333  data = {"drone": {"alt": Drone.alt, "lng":Drone.lng,"lat":Drone.lat, "hdg": Drone.hdg},
@@ -375,10 +319,12 @@ def sendData(): #send data from drone to groundstation
         33337 "sweepdata": {"sweep": sweepdata, "target": radiodirection}}
         '''
 
-        #send status data
-        Drone.sendText(0,0,f'status:{status}')
-
-        Drone.sendData()
+        try:
+            #send status data
+            Drone.sendText(0,0,f'status:{status}')
+            Drone.sendData()
+        except:
+            print("drone unable to senddata")
 
         time.sleep(1/rate)
     
@@ -386,6 +332,7 @@ def sendData(): #send data from drone to groundstation
 
 #Mavlink Incoming Message Handling from Groundstation
 def receiveData():
+
     global status
     global mode
     global circledata
@@ -397,7 +344,15 @@ def receiveData():
     global DATARATE
 
     while(1):
-        msg = Drone.connection.recv_match(blocking=True)
+        if(Drone.thread_stop):
+            break
+        try:    
+            msg = Drone.connection.recv_match(blocking=True, timeout = 1)
+        except:
+            print("drone unable to reveive data")
+
+        if not msg:
+            continue
 
         if msg and msg.get_type() == 'STATUSTEXT' and msg.get_srcSystem() == 3:
             msg = msg.text
@@ -438,6 +393,7 @@ def receiveData():
                 
         #if commamnd long message
         elif msg.get_type() == "COMMAND_LONG":
+            '''
             #setradiopos
             if msg.command == 33333:
                 #print("got position")
@@ -479,7 +435,8 @@ def receiveData():
                     status = "initcircle"
                 elif msg.param2:
                     circledata, maxlines, sweepdata = [], [], []
-            elif msg.command == 33338:
+            '''
+            if msg.command == 33338:
                 if msg.param1:
                     Drone.startCollecting()
                 elif msg.param2:
@@ -498,24 +455,54 @@ def receiveData():
             elif msg.command == 33341:
                 Drone.kraken.setfreq(int(msg.param1))
     return "amazing" 
-                
 
 
-#start async processes
-t1 = Thread(target = Drone.startStream)
-t2 = Thread(target = main)
-t3 = Thread(target = sendData)
-t4 = Thread(target = receiveData)
-t5 = Thread(target = Drone.sendheartbeat)
-#t3 = Thread(target = Server)
+Threads_started = False
+threads = {}
 
-t1.start()
-t2.start()
-t3.start()
-t4.start()
-t5.start()
-#start comm client
-#client.loop_forever()
+def threadmonitor():
+    global Threads_started, threads
+
+    while True:
+        try:
+            print(f"[MONITOR] Drone connected: {Drone.connected}, Threads started: {Threads_started}")
+            
+            if Drone.connected and not Threads_started:
+                Drone.thread_stop = False
+                Threads_started = True
+
+                threads['stream'] = Thread(target=Drone.startStream, name="startStream")
+                threads['main'] = Thread(target=main, name="main")
+                threads['send'] = Thread(target=sendData, name="sendData")
+                threads['recv'] = Thread(target=receiveData, name="receiveData")
+                threads['heartbeat'] = Thread(target=Drone.sendheartbeat, name="sendHeartbeat")
+
+                for name, t in threads.items():
+                    print(f"[MONITOR] Starting thread: {name}")
+                    t.daemon = True
+                    t.start()
+
+            elif not Drone.connected and Threads_started:
+                print("[MONITOR] Drone disconnected, stopping threads...")
+                Drone.thread_stop = True
+
+                for name, t in threads.items():
+                    print(f"[MONITOR] Joining thread: {name}")
+                    if t.is_alive():
+                        t.join(timeout=3)  # Optionally add timeout
+                threads.clear()
+                Threads_started = False
+
+        except Exception as e:
+            print(f"[MONITOR] Exception: {e}")
+
+        time.sleep(1)
+
+
+
+
+t6 = Thread(target = threadmonitor)
+t6.start()
 
 
 

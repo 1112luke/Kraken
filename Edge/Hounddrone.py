@@ -12,15 +12,14 @@ def finishCircle(self, first, speed):
 
 
 class Hounddrone:
-    def __init__(self, connection, client=None, radiomode="Kraken", radioaddress = None):
+    def __init__(self, radiomode="Kraken", radioaddress = None):
         self.boottime = time.time()
-        self.connection = connection
+        self.connection = None
         self.alt = 0
         self.lat = 0
         self.lng = 0
         self.hdg = 0
         self.mode = 0
-        self.client = client
         self.radioaddress = radioaddress
         self.antennas = []
         self.count = 0
@@ -28,11 +27,15 @@ class Hounddrone:
         self.radiodata = {"data": 0, "hdg": 0, "lat": 0, "lng": 0, "num": 0}
         self.collecting = False
         self.radiomode = radiomode
+        self.krakenthread = None
+        self.connected = False
+        self.thread_stop = False
 
         #initialize radio
         if (self.radiomode == "Kraken"):
             self.kraken = Kraken()
-            self.kraken.start()
+            self.krakenthread = threading.Thread(target = self.kraken.start)
+            self.krakenthread.start()
 
         
         def onmessage(client, userdata, message):
@@ -46,6 +49,7 @@ class Hounddrone:
         def collect():
 
             print("RADIOMODE", self.radiomode)
+            '''
             print("COLLECT")
             if(self.radiomode != "Kraken"):
                 if(self.client != 0):
@@ -71,7 +75,8 @@ class Hounddrone:
                                 #print("sent collect request")
                         except:
                             print("Failed to publish to mqtt")
-            elif (self.radiomode == "Kraken"):
+            '''
+            if (self.radiomode == "Kraken"):
                 while(1):
                     try:
                         if(self.collecting):
@@ -83,20 +88,54 @@ class Hounddrone:
                     time.sleep(1/10)
                             
 
-
+        '''
         if(self.client):
             self.client.subscribe(f"radiohound/clients/data/{self.radioaddress}")
             #self.client.subscribe(f"radiohound/clients/data/#")
             self.client.on_message = onmessage
             self.client.loop_start()
-
+        '''
         #run radiothread checker
         radiothread = threading.Thread(target = collect)
         radiothread.start()
         
+
+    def monitormavlink(self):
+        last_heartbeat_time = time.time()
+
+        while True:
+            try:
+                msg = self.connection.recv_match(type='HEARTBEAT', blocking=True, timeout=1)
+                if msg:
+                    last_heartbeat_time = time.time()
+                    self.connected = True
+                if time.time() - last_heartbeat_time > 5:
+                    print("⚠️ MAVLink heartbeat lost — reconnecting...")
+                    self.connected = False
+                    self.connectmavlink()
+                    last_heartbeat_time = time.time()
+            except Exception as e:
+                print("⚠️ MAVLink monitor error:", e)
+                time.sleep(1)
+                self.connectmavlink()
+    
+    def connectmavlink(self):
+        while True:
+            try:
+                print("Attempting MAVLink connection...")
+                self.connection = mavutil.mavlink_connection("udp:0.0.0.0:14551", source_system=1, source_component=191)
+                self.connection.wait_heartbeat(timeout=3)
+                print(f"✅ Connected to MAVLink system {self.connection.target_system}, component {self.connection.target_component}")
+                return  # Successful connection
+            except:
+                print("❌ MAVLink connection failed")
+                time.sleep(2)  # Wait and retry
+
     def sendheartbeat(self):
         #send beats a 1hz
         while(1):
+            if(self.thread_stop):
+                break
             self.connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
             time.sleep(1)
 
@@ -172,6 +211,8 @@ class Hounddrone:
         GPI = None
 
         while(1):
+            if(self.thread_stop):
+                break
             #constantly get messages and set attributes
             msg = self.connection.recv_match(blocking=True)
 

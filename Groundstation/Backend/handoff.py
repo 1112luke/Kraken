@@ -11,8 +11,8 @@ counter = 0
 
 print("Beginning Handoff.py...")
 
-# Start a connection listening on a UDP port
-the_connection = mavutil.mavlink_connection('udp:localhost:14553', source_system=3, source_component=3)
+# Start a connection listening on a UDP port **use localhost instead of host.docker.internal if not running with docker
+the_connection = mavutil.mavlink_connection('udp:0.0.0.0:14553', source_system=3, source_component=3)
 
 # Wait for the first heartbeat
 # This sets the system and component ID of remote system for the link
@@ -238,7 +238,7 @@ def Server():
     
 
     if(__name__ == "__main__"):
-        app.run(port = 3003)
+        app.run(host="0.0.0.0", port = 3003)
 
 
 t1 = threading.Thread(target = Server)
