@@ -56,6 +56,7 @@ function App() {
     const [vehicles, setvehicles] = useState(["None", "Radiohound", "Kraken"]);
 
     async function getData() {
+        //use localhost instead of backend if not running in docker compose
         await fetch("http://localhost:3003/data")
             .then((res) => res.json())
             .then((data) => {
