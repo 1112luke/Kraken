@@ -27,8 +27,10 @@ function App() {
     });
 
     //kraken stateful variables
-    const [DFdata, setDFdata] = useState("none");
+    const [DFdata, setDFdata] = useState([]);
+    const [recentdf, setrecentdf] = useState("none");
     const [plotting, setplotting] = useState(false);
+    const [num2plot, setnum2plot] = useState(1000);
 
     //stateful variables for mode and status display
     const [mode, setmode] = useState("none");
@@ -68,6 +70,11 @@ function App() {
                 setcircledata(data.circledata);
                 setsweepdata(data.sweepdata);
                 setDFdata([...data.DFdata.measurements]);
+                setrecentdf(
+                    data.DFdata.measurements[
+                        data.DFdata.measurements.length - 1
+                    ]
+                );
                 console.log(data.DFdata.measurements);
             });
     }
@@ -195,6 +202,13 @@ function App() {
                         Heading: {drone.hdg}°
                     </div>
                     <div className="box">
+                        <div className="divider">Marker</div>
+                        Longitude: {radio.lng.toFixed(7)}
+                        <br></br>
+                        Latitude: {radio.lat.toFixed(7)}
+                    </div>
+
+                    <div className="box">
                         <div className="divider">Antenna Data</div>
                         Longitude: {antenna.lng.toFixed(7)}
                         <br></br>
@@ -228,6 +242,8 @@ function App() {
                             setmode={setmode}
                             sendCommand={sendCommand}
                             setplotting={setplotting}
+                            DFdata={DFdata}
+                            setnum2plot={setnum2plot}
                         ></Krakenscreen>
                     )}
                 </div>
@@ -303,6 +319,8 @@ function App() {
                         status={status}
                         mappos={mappos}
                         DFdata={DFdata}
+                        recentdf={recentdf}
+                        num2plot={num2plot}
                         plotting={plotting}
                     ></Dronemap>
                 </div>

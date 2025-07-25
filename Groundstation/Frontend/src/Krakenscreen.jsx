@@ -7,6 +7,9 @@ export default function Krakenscreen({
     setmode,
     sendCommand,
     setplotting,
+    DFdata,
+    setnum2plot,
+    radio,
 }) {
     const [currfreq, setcurrfreq] = useState(915);
 
@@ -33,6 +36,7 @@ export default function Krakenscreen({
                     <Button
                         onpress={() => {
                             sendCommand("clearlines", 0);
+                            setnum2plot(1000);
                             setplotting(true);
                         }}
                         text={"Start Plotting"}
@@ -41,6 +45,8 @@ export default function Krakenscreen({
                     <Button
                         onpress={() => {
                             setplotting(false);
+                            setnum2plot(DFdata.length);
+                            console.log("settingnum2plot: ", DFdata.length);
                         }}
                         text={"Stop Plotting"}
                     ></Button>
@@ -48,6 +54,7 @@ export default function Krakenscreen({
                     <Button
                         onpress={() => {
                             sendCommand("clearlines", 0);
+                            setnum2plot(0);
                         }}
                         text={"Clear Lines"}
                     ></Button>
