@@ -25,7 +25,7 @@ export default function Krakenscreen({
                         }}
                         text={"Start Collecting"}
                     ></Button>
-                    <br></br>
+                    <br></br>``
                     <Button
                         onpress={() => {
                             sendCommand("setcollecting", 0);

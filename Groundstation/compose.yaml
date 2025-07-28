@@ -8,3 +8,25 @@ services:
     build: ./Frontend
     ports:
     - "5173:5173"
+  
+  
+  mavproxy:
+    image: sitin/mavproxy:latest
+    stdin_open: true   # keep stdin open (interactive)
+    tty: true          # allocate a TTY
+    command:
+        - --master
+        - tcp:192.168.10.2:14553
+        - --baud
+        - "57600"
+        - --out
+        - host.docker.internal:14553
+        - --out
+        - host.docker.internal:14550
+        - --streamrate=-1
+        - --nowait
+    #devices:
+    #list devices below
+    ports:
+      - "14553:14553"
+      - "14550:14550"
