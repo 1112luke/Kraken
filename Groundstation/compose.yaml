@@ -8,15 +8,16 @@ services:
     build: ./Frontend
     ports:
     - "5173:5173"
-  
-  
   mavproxy:
     image: sitin/mavproxy:latest
     stdin_open: true   # keep stdin open (interactive)
     tty: true          # allocate a TTY
+    network_mode: "host"
     command:
         - --master
-        - tcp:192.168.10.2:14553
+        - tcp:192.168.1.225:14553 #vehicle 1
+        - --master
+        - tcp:192.168.1.225:5770 #vehicle 2
         - --baud
         - "57600"
         - --out

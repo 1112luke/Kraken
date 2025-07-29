@@ -1,309 +1,197 @@
-#forward data from web interface to mqtt
-from flask import Flask, request
-from  flask_cors import CORS
+# forward data from web interface to mqtt
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import logging
 import json
 import threading
 import time
+from Dronedata import DroneData
 from pymavlink import mavutil
 
 counter = 0
-
 print("Beginning Handoff.py...")
 
-# Start a connection listening on a UDP port **use localhost instead of host.docker.internal if not running with docker
+# Connect to MAVLink via UDP
 the_connection = mavutil.mavlink_connection('udp:0.0.0.0:14553', source_system=3, source_component=3)
-
-# Wait for the first heartbeat
-# This sets the system and component ID of remote system for the link
 the_connection.wait_heartbeat()
-
 the_connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
 print("Heartbeat from system (system %u component %u)" % (the_connection.target_system, the_connection.target_component))
 
-
 def sendheartbeat():
-        #send beats a 1hz
-        while(1):
-            the_connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
-            time.sleep(1)
+    while True:
+        the_connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+        time.sleep(1)
 
 def connectcountdown():
-    #decrement counter for connection status of raspberry pi
     global counter
-    while(1):
-        #print(counter)
-        if counter == 0:
-            dronedata["program"]["connected"] = 0
-        else:
-            dronedata["program"]["connected"] = 1
-            counter-=1
+    while True:
+        for drone in dronedata:
+            drone.program["connected"] = 1 if counter > 0 else 0
+        counter = max(0, counter - 1)
         time.sleep(0.01)
 
-#holds drone data to be sent from program to drone. Currently the python program sends at 10 hz and the frontend requests at 10 hz and I just hope they kinda matchup. No communication of the datarate is implemented.
-dronedata = {"drone": {"alt": 0, "lng":0,"lat":0, "hdg": 0,},
-        "antenna": {"lng":0, "lat":0, "hdg": 0, "ang": 0, "gain": 0, "toradio": 0, "reading": 0, "collecting": 0, "connected": 0, "frequency": 0},
-        "program": {"status":"", "connected": 0},
-        "circledata": {"circle": None, "maxlines": None},
-        "sweepdata": {"sweep": None, "target": None},
-        "DFdata": {"measurements": []}}
+# Multi-drone state
+dronedata = []
 
 def getData():
-    global dronedata
-    global alt
-    global counter
+    global dronedata, counter
 
     GPI = None
-
     collected = set()
-    first = 1
+    first = True
     offset = 0
 
-    while(1):
-        #constantly get messages and set attributes
-            msg = the_connection.recv_match(blocking=True)
+    while True:
+        msg = the_connection.recv_match(blocking=True)
+        currsysid = msg.get_srcSystem()
+        currdroneindex = None
+
+        # Match drone by sysid
+        for index, drone in enumerate(dronedata):
+            if drone.drone["sysid"] == currsysid:
+                currdroneindex = index
+                break
+
+        if currdroneindex is None:
+            new_drone = DroneData()
+            new_drone.drone["sysid"] = currsysid  # ✅ FIXED
+            dronedata.append(new_drone)
+            currdroneindex = len(dronedata) - 1
+
+        drone = dronedata[currdroneindex]
+
+        if msg.get_type() == "GLOBAL_POSITION_INT":
             try:
-                GPI = the_connection.messages["GLOBAL_POSITION_INT"]
+                drone.drone["alt"] = msg.alt / 1000
+                drone.drone["lat"] = msg.lat * 1e-7
+                drone.drone["lng"] = msg.lon * 1e-7
+                drone.drone["hdg"] = msg.hdg / 100
             except:
                 print("NO POSITION INFORMATION")
-                
-            if(msg.get_type() == "GLOBAL_POSITION_INT"):
-                try:
 
-                    dronedata["drone"]["alt"] = GPI.alt/1000
-                    dronedata["drone"]["lat"] = GPI.lat*1E-7
-                    dronedata["drone"]["lng"] = GPI.lon*1E-7
-                    dronedata["drone"]["hdg"] = GPI.hdg/100
-                except:
-                    print("Connecting...")
-                #print(GPI.lat*1E-7)
-                #print(GPI.lon*1E-7)
+        elif msg.get_type() == "COMMAND_INT" and msg.command == 33339:
+            drone.antenna["reading"] = msg.param1
+            drone.antenna["collecting"] = msg.param4
 
-            if(msg.get_type() == "COMMAND_INT"):
-                #print(msg.command)
-                #get kraken line data and store as array
-                if(msg.command == 33339):
-                    print("antenna", msg.param1)
-                    print("collectnum", msg.param2)
-                    print("lat", msg.x)
-                    print("lat", msg.y)
-                    dronedata["antenna"]["reading"] = msg.param1
-                    dronedata["antenna"]["collecting"] = msg.param4
+            if first:
+                first = False
+                offset = msg.param2
 
-                    if(first):
-                        first = 0
-                        offset = msg.param2
+            if msg.param2 not in collected:
+                collected.add(msg.param2)
+                measurement = {
+                    "lat": msg.x,
+                    "lng": msg.y,
+                    "hdg": msg.param3,
+                    "data": msg.param1
+                }
+                drone.DFdata["measurements"].append(measurement)
 
-                    if(msg.param2 not in collected):
-                        #add it to the list
-                        collected.add(msg.param2)
-                        index = int(msg.param2)
-                        measurement = {"lat": msg.x, "lng": msg.y, "hdg": msg.param3, "data": msg.param1}
+        elif msg.get_type() == "COMMAND_LONG" and msg.command == 33340:
+            drone.antenna["connected"] = msg.param1
+            drone.antenna["frequency"] = msg.param2
 
-                        dronedata["DFdata"]["measurements"].append(measurement)
-
-            if(msg.get_type() == "COMMAND_LONG"):
-                #print(msg.command)
-                #get kraken line data and store as array
-                if(msg.command == 33340):
-                    dronedata["antenna"]["connected"] = msg.param1
-                    dronedata["antenna"]["frequency"] = msg.param2
-                        
-            
-            if msg.get_type() == "HEARTBEAT":
-                if(msg.get_srcComponent() == 191):
-                    counter = 300
-                
-
+        elif msg.get_type() == "HEARTBEAT":
+            if msg.get_srcComponent() == 191:
+                counter = 300
 
 def Server():
     app = Flask(__name__)
     app.logger.setLevel(logging.ERROR)
     logging.getLogger('werkzeug').disabled = True
     CORS(app)
-    
-    #Drone -> frontend
+
     @app.route('/data')
     def getDrone():
-        global dronedata
-        return dronedata
-       
-    #frontend -> Drone
-    @app.route("/command", methods = ['POST'])
+        return jsonify([drone.to_dict() for drone in dronedata])
+
+    @app.route("/command", methods=['POST'])
     def doCommand():
-        #global client
         data = request.get_json()
         payload = {
             "command": data.get("command"),
             "value": data.get("value")
         }
 
-        text = json.dumps(payload)
-        text=text.encode('utf-8')
-
+        text = json.dumps(payload).encode('utf-8')
         print("sentexec")
 
-        #send mavlink
-        param1 = 0
-        param2 = 0
-        param3 = 0
-        param4 = 0
-        param5 = 0
-        param6 = 0
-        param7 = 0
+        cmdnum = 0
+        param1 = param2 = param3 = param4 = param5 = param6 = param7 = 0
 
         command = payload["command"]
+        value = payload["value"]
 
         if command == "setradiopos":
             cmdnum = 33333
-            param1 = json.loads(payload["value"]).get("lat")
-            param2 = json.loads(payload["value"]).get("lng")
+            pos = json.loads(value)
+            param1 = pos.get("lat")
+            param2 = pos.get("lng")
         elif command == "setmode":
             cmdnum = 33334
-            match payload["value"]:
-                case "none":
-                    param1 = 1
-                case "locationfollow":
-                    param2 = 1
-                case "radiofollow":
-                    param3 = 1
-                case "eyeofender":
-                    param4 = 1
-                case "debug":
-                    param5 = 1
-        
+            match value:
+                case "none": param1 = 1
+                case "locationfollow": param2 = 1
+                case "radiofollow": param3 = 1
+                case "eyeofender": param4 = 1
+                case "debug": param5 = 1
         elif command == "follow":
             cmdnum = 33336
-            if payload["value"]:
-                param1 = 1
-            else:
-                param2 = 1
-        
+            param1 = 1 if value else 0
+            param2 = 0 if value else 1
         elif command == "setrotationspeed":
             cmdnum = 33336
-            param3 = payload["value"]
-
+            param3 = value
         elif command == "setdatarate":
             cmdnum = 33336
-            param4 = payload["value"]
-
+            param4 = value
         elif command == "setsweepwidth":
             cmdnum = 33336
-            param5 = payload["value"]
-        
-        elif command =="setmovespeed":
+            param5 = value
+        elif command == "setmovespeed":
             cmdnum = 33336
-            param6 = payload["value"]
-
+            param6 = value
         elif command == "circle":
-            print("CIRCLE")
             cmdnum = 33337
             param1 = 1
-
         elif command == "clearlines":
-            dronedata["DFdata"]["measurements"] = []
+            for drone in dronedata:
+                drone.DFdata["measurements"].clear()  # ✅ FIXED
             cmdnum = 33337
             param2 = 1
-
         elif command == "setcollecting":
             cmdnum = 33338
-            if payload["value"]:
-                param1 = 1
-            else:
-                param2 = 1
+            param1 = 1 if value else 0
+            param2 = 0 if value else 1
         elif command == "setradiomode":
             cmdnum = 33338
-            if payload["value"]:
-                print("real")
-                param3 = 1
-            else:
-                print("simulation")
-                param4 = 1
+            param3 = 1 if value else 0
+            param4 = 0 if value else 1
         elif command == "connectsensor":
             cmdnum = 33338
             param5 = 1
         elif command == "setfrequency":
             cmdnum = 33341
-            param1 = payload["value"]
+            param1 = value
 
-
-        #send message
-        #spam 20 times
-        for i in range(50):
-            the_connection.mav.command_long_send(1, 191, cmdnum, 0, float(param1), float(param2), float(param3), float(param4), float(param5), float(param6), float(param7))
-            time.sleep(1/100)
+        for _ in range(50):
+            the_connection.mav.command_long_send(1, 191, cmdnum, 0,
+                                                 float(param1), float(param2), float(param3),
+                                                 float(param4), float(param5), float(param6), float(param7))
+            time.sleep(0.01)
 
         return "amazing"
 
-    
+    if __name__ == "__main__":
+        app.run(host="0.0.0.0", port=3003)
 
-    if(__name__ == "__main__"):
-        app.run(host="0.0.0.0", port = 3003)
-
-
-t1 = threading.Thread(target = Server)
-t2 = threading.Thread(target = getData)
-t3 = threading.Thread(target = sendheartbeat)
-t4 = threading.Thread(target = connectcountdown)
+# Launch Threads
+t1 = threading.Thread(target=Server)
+t2 = threading.Thread(target=getData)
+t3 = threading.Thread(target=sendheartbeat)
+t4 = threading.Thread(target=connectcountdown)
 
 t1.start()
 t2.start()
 t3.start()
 t4.start()
-#client.loop_forever()
-
-
-
-
-
-
-
-'''
-command table
-
-------Outgoing------
-33333: radio position
-    param1: lat
-    param2: lng
-
-33334 & 33335: setmode => 7 per, 14 total starting with 33334 param1
-    param1: none
-    param2: locationfollow
-    param3: radiofollow
-    param4: eyeofender
-    param5: debug
-
-33336: radiofollow commands
-    param1: follow
-    param2: stopfollow
-    param3: rotationspeed
-    param4: datarate
-    param5: sweepwidth
-    param6: movespeed
-
-33337: eyeofender commands
-    param1: circle
-    param2: clearlines
-    param3: rotationspeed
-    param4: datarate
-
-33338: debug commands
-    param1: collect
-    param2: stop collect
-    param3: setradiomode real
-    param4: setradiomode simulated
-    param5: connectsensor
-
-33341: set frequency
-    param1: frequency (MHz)
-
-
-------Incoming------
-33339: kraken antenna data
-    param1: flaot (antenna d)
-    param2: 
-    param3: hdg
-    param4: collecting, bool
-33340: agnostic sensor data
-    param1: connected (bool)
-'''

@@ -26,6 +26,10 @@ function App() {
         reading: 0,
     });
 
+    const [dronesdata, setdronesdata] = useState([]);
+    const [sysids, setsysids] = useState([]);
+    const [activesys, setactivesys] = useState(0);
+
     //kraken stateful variables
     const [DFdata, setDFdata] = useState([]);
     const [recentdf, setrecentdf] = useState("none");
@@ -62,6 +66,8 @@ function App() {
         await fetch("http://localhost:3003/data")
             .then((res) => res.json())
             .then((data) => {
+                setdronesdata([...data]);
+                data = data[0];
                 setdrone(data.drone);
                 setantenna(data.antenna);
                 setstatus(data.program.status);
@@ -75,6 +81,7 @@ function App() {
                         data.DFdata.measurements.length - 1
                     ]
                 );
+
                 console.log(data.DFdata.measurements);
             });
     }
@@ -112,6 +119,15 @@ function App() {
     useEffect(() => {
         sendCommand("setmode", mode);
     }, [mode]);
+
+    useEffect(() => {
+        var newarr = [];
+        for (var i = 0; i < dronesdata.length; i++) {
+            newarr.push(dronesdata[i].drone.sysid);
+        }
+        setsysids(newarr);
+        console.log("DRONES: ", dronesdata);
+    }, [dronesdata]);
 
     useEffect(() => {
         var color;
@@ -191,15 +207,26 @@ function App() {
             </div>
             <div className="container">
                 <div className="left">
+                    <Dropdown
+                        value={activesys}
+                        values={sysids}
+                        setvalue={setactivesys}
+                    ></Dropdown>
                     <div className="box">
-                        <div className="divider">Drone Data</div>
-                        Altitude: {drone.alt}
-                        <br></br>
-                        Longitude: {drone.lng.toFixed(7)}
-                        <br></br>
-                        Latitude: {drone.lat.toFixed(7)}
-                        <br></br>
-                        Heading: {drone.hdg}°
+                        {dronesdata.map((drone) => {
+                            return (
+                                <>
+                                    <div className="divider">Drone Data</div>
+                                    Altitude: {drone.drone.alt}
+                                    <br></br>
+                                    Longitude: {drone.drone.lng.toFixed(7)}
+                                    <br></br>
+                                    Latitude: {drone.drone.lat.toFixed(7)}
+                                    <br></br>
+                                    Heading: {drone.drone.hdg}°
+                                </>
+                            );
+                        })}
                     </div>
                     <div className="box">
                         <div className="divider">Marker</div>
@@ -236,7 +263,7 @@ function App() {
                     )}
                     {vehicle == "Kraken" && (
                         <Krakenscreen
-                            drone={drone}
+                            dronesdata={dronesdata}
                             antenna={antenna}
                             mode={mode}
                             setmode={setmode}
@@ -289,8 +316,8 @@ function App() {
                                 text={"Center Drone"}
                                 onpress={() => {
                                     setmapppos({
-                                        lat: drone.lat,
-                                        lng: drone.lng,
+                                        lat: dronesdata[0].drone.lat,
+                                        lng: dronesdata[0].drone.lng,
                                     });
                                 }}
                                 style={{ flex: 1 }}
@@ -299,8 +326,8 @@ function App() {
                                 text={"Get radio"}
                                 onpress={() => {
                                     setradio({
-                                        lat: drone.lat,
-                                        lng: drone.lng,
+                                        lat: dronesdata[0].drone.lat,
+                                        lng: dronesdata[0].drone.lng,
                                     });
                                 }}
                                 style={{ flex: 1 }}
@@ -310,7 +337,7 @@ function App() {
 
                     <div style={{ flex: 1 }}></div>
                     <Dronemap
-                        drone={drone}
+                        dronesdata={dronesdata}
                         radio={radio}
                         antenna={antenna}
                         setradio={setradio}

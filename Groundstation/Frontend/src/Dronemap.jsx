@@ -34,7 +34,7 @@ function colorScale(m1, list) {
 }
 
 export default function Dronemap({
-    drone,
+    dronesdata,
     radio,
     antenna,
     setradio,
@@ -77,110 +77,97 @@ export default function Dronemap({
                         💥
                     </Pin>
                 </AdvancedMarker>
-                <AdvancedMarker
-                    position={{ lat: drone.lat, lng: drone.lng }}
-                    clickable={true}
-                    onClick={() => alert("marker was clicked!")}
-                    title={"Drone"}
-                >
-                    <Pin
-                        background={"#8E9DB4"}
-                        borderColor={"#CCE0FF"}
-                        scale={1.6}
-                    >
-                        🚁
-                    </Pin>
-                </AdvancedMarker>
-                <AdvancedMarker
-                    position={{ lat: antenna.lat, lng: antenna.lng }}
-                    clickable={true}
-                    title={"Antenna"}
-                >
-                    <Pin
-                        background={"#22ccff"}
-                        borderColor={"#1e89a1"}
-                        scale={0.7}
-                    >
-                        📡
-                    </Pin>
-                </AdvancedMarker>
-                {/*headingline*/}
-                <Polyline
-                    path={[
-                        { lat: drone.lat, lng: drone.lng },
-                        {
-                            lat:
-                                drone.lat +
-                                0.0003 * Math.cos((drone.hdg * Math.PI) / 180),
-                            lng:
-                                drone.lng +
-                                0.0003 * Math.sin((drone.hdg * Math.PI) / 180),
-                        },
-                    ]}
-                    strokeColor="#0000FF"
-                    strokeOpacity={0.8}
-                    strokeWeight={2}
-                />
-                {/*Current DFline*/}
-                {recentdf && (
-                    <Polyline
-                        path={[
-                            {
-                                lat: recentdf.lat * 1e-7,
-                                lng: recentdf.lng * 1e-7,
-                            },
-                            {
-                                lat:
-                                    recentdf.lat * 1e-7 +
-                                    0.0005 *
-                                        Math.cos(
-                                            ((recentdf.hdg + recentdf.data) *
-                                                Math.PI) /
-                                                180
-                                        ),
-                                lng:
-                                    recentdf.lng * 1e-7 +
-                                    0.0005 *
-                                        Math.sin(
-                                            ((recentdf.hdg + recentdf.data) *
-                                                Math.PI) /
-                                                180
-                                        ),
-                            },
-                        ]}
-                        strokeColor="#CCE0FF"
-                        strokeOpacity={0.8}
-                        strokeWeight={3}
-                    />
-                )}
-                {/*All DFlines*/}
-                {DFdata.length > 0 &&
-                    DFdata.map((line, index) => {
-                        return (
-                            index < num2plot && (
+
+                {dronesdata.map((dronedata) => {
+                    return (
+                        <>
+                            <AdvancedMarker
+                                position={{
+                                    lat: dronedata.drone.lat,
+                                    lng: dronedata.drone.lng,
+                                }}
+                                clickable={true}
+                                onClick={() => alert("marker was clicked!")}
+                                title={"Drone"}
+                            >
+                                <Pin
+                                    background={"#8E9DB4"}
+                                    borderColor={"#CCE0FF"}
+                                    scale={1.6}
+                                >
+                                    🚁{dronedata.drone.sysid}
+                                </Pin>
+                            </AdvancedMarker>
+                            <AdvancedMarker
+                                position={{
+                                    lat: dronedata.antenna.lat,
+                                    lng: dronedata.antenna.lng,
+                                }}
+                                clickable={true}
+                                title={"Antenna"}
+                            >
+                                <Pin
+                                    background={"#22ccff"}
+                                    borderColor={"#1e89a1"}
+                                    scale={0.7}
+                                >
+                                    📡
+                                </Pin>
+                            </AdvancedMarker>
+                            {/*headingline*/}
+                            <Polyline
+                                path={[
+                                    {
+                                        lat: dronedata.drone.lat,
+                                        lng: dronedata.drone.lng,
+                                    },
+                                    {
+                                        lat:
+                                            dronedata.drone.lat +
+                                            0.0003 *
+                                                Math.cos(
+                                                    (dronedata.drone.hdg *
+                                                        Math.PI) /
+                                                        180
+                                                ),
+                                        lng:
+                                            dronedata.drone.lng +
+                                            0.0003 *
+                                                Math.sin(
+                                                    (dronedata.drone.hdg *
+                                                        Math.PI) /
+                                                        180
+                                                ),
+                                    },
+                                ]}
+                                strokeColor="#0000FF"
+                                strokeOpacity={0.8}
+                                strokeWeight={2}
+                            />
+                            {/*Current DFline*/}
+                            {recentdf && (
                                 <Polyline
-                                    key={index}
                                     path={[
                                         {
-                                            lat: line.lat * 1e-7,
-                                            lng: line.lng * 1e-7,
+                                            lat: recentdf.lat * 1e-7,
+                                            lng: recentdf.lng * 1e-7,
                                         },
                                         {
                                             lat:
-                                                line.lat * 1e-7 +
-                                                0.002 *
+                                                recentdf.lat * 1e-7 +
+                                                0.0005 *
                                                     Math.cos(
-                                                        ((line.hdg +
-                                                            line.data) *
+                                                        ((recentdf.hdg +
+                                                            recentdf.data) *
                                                             Math.PI) /
                                                             180
                                                     ),
                                             lng:
-                                                line.lng * 1e-7 +
-                                                0.002 *
+                                                recentdf.lng * 1e-7 +
+                                                0.0005 *
                                                     Math.sin(
-                                                        ((line.hdg +
-                                                            line.data) *
+                                                        ((recentdf.hdg +
+                                                            recentdf.data) *
                                                             Math.PI) /
                                                             180
                                                     ),
@@ -190,153 +177,245 @@ export default function Dronemap({
                                     strokeOpacity={0.8}
                                     strokeWeight={3}
                                 />
-                            )
-                        );
-                    })}
-                {/*lines for circledata*/}
-                {circledata.circle &&
-                    circledata.circle.map((measurement, index) => {
-                        return (
-                            <Polyline
-                                key={index}
-                                path={[
-                                    {
-                                        lat: measurement.lat,
-                                        lng: measurement.lng,
-                                    },
-                                    {
-                                        lat:
-                                            measurement.lat +
-                                            0.0004 *
-                                                Math.cos(
-                                                    (measurement.hdg *
-                                                        Math.PI) /
-                                                        180
-                                                ),
-                                        lng:
-                                            measurement.lng +
-                                            0.0004 *
-                                                Math.sin(
-                                                    (measurement.hdg *
-                                                        Math.PI) /
-                                                        180
-                                                ),
-                                    },
-                                ]}
-                                strokeColor={colorScale(
-                                    measurement.data,
-                                    circledata.circle
+                            )}
+                            {/*All DFlines*/}
+                            {dronedata.DFdata.measurements.length > 0 &&
+                                dronedata.DFdata.measurements.map(
+                                    (line, index) => {
+                                        return (
+                                            index < num2plot && (
+                                                <Polyline
+                                                    key={index}
+                                                    path={[
+                                                        {
+                                                            lat:
+                                                                line.lat * 1e-7,
+                                                            lng:
+                                                                line.lng * 1e-7,
+                                                        },
+                                                        {
+                                                            lat:
+                                                                line.lat *
+                                                                    1e-7 +
+                                                                0.002 *
+                                                                    Math.cos(
+                                                                        ((line.hdg +
+                                                                            line.data) *
+                                                                            Math.PI) /
+                                                                            180
+                                                                    ),
+                                                            lng:
+                                                                line.lng *
+                                                                    1e-7 +
+                                                                0.002 *
+                                                                    Math.sin(
+                                                                        ((line.hdg +
+                                                                            line.data) *
+                                                                            Math.PI) /
+                                                                            180
+                                                                    ),
+                                                        },
+                                                    ]}
+                                                    strokeColor="#CCE0FF"
+                                                    strokeOpacity={0.8}
+                                                    strokeWeight={3}
+                                                />
+                                            )
+                                        );
+                                    }
                                 )}
-                                strokeOpacity={0.9}
-                                strokeWeight={3}
-                            ></Polyline>
-                        );
-                    })}
-                {circledata.maxlines &&
-                    circledata.maxlines.map((line, index) => {
-                        return (
-                            <Polyline
-                                key={index}
-                                path={[
-                                    { lat: line.lat, lng: line.lng },
-                                    {
-                                        lat:
-                                            line.lat +
-                                            0.002 *
-                                                Math.cos(
-                                                    (line.hdg * Math.PI) / 180
-                                                ),
-                                        lng:
-                                            line.lng +
-                                            0.002 *
-                                                Math.sin(
-                                                    (line.hdg * Math.PI) / 180
-                                                ),
-                                    },
-                                ]}
-                                strokeColor={"Green"}
-                                strokeOpacity={0.9}
-                                strokeWeight={3}
-                            ></Polyline>
-                        );
-                    })}
-                {/*lines for sweep*/}
-                {sweepdata.sweep &&
-                    sweepdata.sweep.map((measurement, index) => {
-                        return (
-                            <Polyline
-                                key={index}
-                                path={[
-                                    { lat: drone.lat, lng: drone.lng },
-                                    {
-                                        lat:
-                                            drone.lat +
-                                            0.0004 *
-                                                Math.cos(
-                                                    (measurement.hdg *
-                                                        Math.PI) /
-                                                        180
-                                                ),
-                                        lng:
-                                            drone.lng +
-                                            0.0004 *
-                                                Math.sin(
-                                                    (measurement.hdg *
-                                                        Math.PI) /
-                                                        180
-                                                ),
-                                    },
-                                ]}
-                                strokeColor={colorScale(
-                                    measurement.data,
-                                    sweepdata.sweep
+                            {/*lines for circledata*/}
+                            {dronedata.circledata.circle &&
+                                dronedata.circledata.circle.map(
+                                    (measurement, index) => {
+                                        return (
+                                            <Polyline
+                                                key={index}
+                                                path={[
+                                                    {
+                                                        lat: measurement.lat,
+                                                        lng: measurement.lng,
+                                                    },
+                                                    {
+                                                        lat:
+                                                            measurement.lat +
+                                                            0.0004 *
+                                                                Math.cos(
+                                                                    (measurement.hdg *
+                                                                        Math.PI) /
+                                                                        180
+                                                                ),
+                                                        lng:
+                                                            measurement.lng +
+                                                            0.0004 *
+                                                                Math.sin(
+                                                                    (measurement.hdg *
+                                                                        Math.PI) /
+                                                                        180
+                                                                ),
+                                                    },
+                                                ]}
+                                                strokeColor={colorScale(
+                                                    measurement.data,
+                                                    circledata.circle
+                                                )}
+                                                strokeOpacity={0.9}
+                                                strokeWeight={3}
+                                            ></Polyline>
+                                        );
+                                    }
                                 )}
-                                strokeOpacity={0.9}
-                                strokeWeight={3}
-                            ></Polyline>
-                        );
-                    })}
-                {sweepdata.target && status == "tracking" && (
-                    <Polyline
-                        path={[
-                            { lat: drone.lat, lng: drone.lng },
-                            {
-                                lat:
-                                    drone.lat +
-                                    0.002 *
-                                        Math.cos(
-                                            (sweepdata.target * Math.PI) / 180
-                                        ),
-                                lng:
-                                    drone.lng +
-                                    0.002 *
-                                        Math.sin(
-                                            (sweepdata.target * Math.PI) / 180
-                                        ),
-                            },
-                        ]}
-                        strokeColor={"Green"}
-                        strokeOpacity={0.9}
-                        strokeWeight={2}
-                    ></Polyline>
-                )}
-                {/*line to radio*/}
-                <Polyline
-                    path={[
-                        { lat: drone.lat, lng: drone.lng },
-                        {
-                            lat:
-                                drone.lat +
-                                0.0002 * Math.cos(directionTo(drone, radio)),
-                            lng:
-                                drone.lng +
-                                0.0002 * Math.sin(directionTo(drone, radio)),
-                        },
-                    ]}
-                    strokeColor="green"
-                    strokeOpacity={0.8}
-                    strokeWeight={2}
-                />
+                            {dronedata.circledata.maxlines &&
+                                dronedata.circledata.maxlines.map(
+                                    (line, index) => {
+                                        return (
+                                            <Polyline
+                                                key={index}
+                                                path={[
+                                                    {
+                                                        lat: line.lat,
+                                                        lng: line.lng,
+                                                    },
+                                                    {
+                                                        lat:
+                                                            line.lat +
+                                                            0.002 *
+                                                                Math.cos(
+                                                                    (line.hdg *
+                                                                        Math.PI) /
+                                                                        180
+                                                                ),
+                                                        lng:
+                                                            line.lng +
+                                                            0.002 *
+                                                                Math.sin(
+                                                                    (line.hdg *
+                                                                        Math.PI) /
+                                                                        180
+                                                                ),
+                                                    },
+                                                ]}
+                                                strokeColor={"Green"}
+                                                strokeOpacity={0.9}
+                                                strokeWeight={3}
+                                            ></Polyline>
+                                        );
+                                    }
+                                )}
+                            {/*lines for sweep*/}
+                            {dronedata.sweepdata.sweep &&
+                                dronedata.sweepdata.sweep.map(
+                                    (measurement, index) => {
+                                        return (
+                                            <Polyline
+                                                key={index}
+                                                path={[
+                                                    {
+                                                        lat: dronedata.drone
+                                                            .lat,
+                                                        lng: dronedata.drone
+                                                            .lng,
+                                                    },
+                                                    {
+                                                        lat:
+                                                            dronedata.drone
+                                                                .lat +
+                                                            0.0004 *
+                                                                Math.cos(
+                                                                    (measurement.hdg *
+                                                                        Math.PI) /
+                                                                        180
+                                                                ),
+                                                        lng:
+                                                            dronedata.drone
+                                                                .lng +
+                                                            0.0004 *
+                                                                Math.sin(
+                                                                    (measurement.hdg *
+                                                                        Math.PI) /
+                                                                        180
+                                                                ),
+                                                    },
+                                                ]}
+                                                strokeColor={colorScale(
+                                                    measurement.data,
+                                                    dronedata.sweepdata.sweep
+                                                )}
+                                                strokeOpacity={0.9}
+                                                strokeWeight={3}
+                                            ></Polyline>
+                                        );
+                                    }
+                                )}
+                            {dronedata.sweepdata.target &&
+                                status == "tracking" && (
+                                    <Polyline
+                                        path={[
+                                            {
+                                                lat: dronedata.drone.lat,
+                                                lng: dronedata.drone.lng,
+                                            },
+                                            {
+                                                lat:
+                                                    dronedata.drone.lat +
+                                                    0.002 *
+                                                        Math.cos(
+                                                            (dronedata.sweepdata
+                                                                .target *
+                                                                Math.PI) /
+                                                                180
+                                                        ),
+                                                lng:
+                                                    dronedata.drone.lng +
+                                                    0.002 *
+                                                        Math.sin(
+                                                            (dronedata.sweepdata
+                                                                .target *
+                                                                Math.PI) /
+                                                                180
+                                                        ),
+                                            },
+                                        ]}
+                                        strokeColor={"Green"}
+                                        strokeOpacity={0.9}
+                                        strokeWeight={2}
+                                    ></Polyline>
+                                )}
+                            {/*line to radio*/}
+                            <Polyline
+                                path={[
+                                    {
+                                        lat: dronedata.drone.lat,
+                                        lng: dronedata.drone.lng,
+                                    },
+                                    {
+                                        lat:
+                                            dronedata.drone.lat +
+                                            0.0002 *
+                                                Math.cos(
+                                                    directionTo(
+                                                        dronedata.drone,
+                                                        radio
+                                                    )
+                                                ),
+                                        lng:
+                                            dronedata.drone.lng +
+                                            0.0002 *
+                                                Math.sin(
+                                                    directionTo(
+                                                        dronedata.drone,
+                                                        radio
+                                                    )
+                                                ),
+                                    },
+                                ]}
+                                strokeColor="green"
+                                strokeOpacity={0.8}
+                                strokeWeight={2}
+                            />
+                        </>
+                    );
+                })}
             </Map>
         </APIProvider>
     );
