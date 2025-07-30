@@ -28,7 +28,7 @@ function App() {
 
     const [dronesdata, setdronesdata] = useState([]);
     const [sysids, setsysids] = useState([]);
-    const [activesys, setactivesys] = useState(0);
+    const [activesys, setactivesys] = useState(1);
 
     //kraken stateful variables
     const [DFdata, setDFdata] = useState([]);
@@ -40,16 +40,6 @@ function App() {
     const [mode, setmode] = useState("none");
     const [status, setstatus] = useState("none");
     const [color, setcolor] = useState("none");
-
-    //stateful variables for Dronemodes
-    const [circledata, setcircledata] = useState([]);
-    const [circlespeed, setcirclespeed] = useState(50);
-    const [sweepwidth, setsweepwidth] = useState(160);
-    const [sweepdata, setsweepdata] = useState([]);
-    const [datarate, setdatarate] = useState(20);
-    const [connected, setconnected] = useState(0);
-    const [sensorconnected, setsensorconnected] = useState(0);
-    const [movespeed, setmovespeed] = useState(8.5);
 
     //stateful vaiables for map
     const [mappos, setmapppos] = useState({
@@ -66,23 +56,14 @@ function App() {
         await fetch("http://localhost:3003/data")
             .then((res) => res.json())
             .then((data) => {
+                //set drones recent data
+                for (var i = 0; i < data.length; i++) {
+                    data[i].DFdata.recent =
+                        data[i].DFdata.measurements[
+                            data[i].DFdata.measurements.length - 1
+                        ];
+                }
                 setdronesdata([...data]);
-                data = data[0];
-                setdrone(data.drone);
-                setantenna(data.antenna);
-                setstatus(data.program.status);
-                setconnected(data.program.connected);
-                setsensorconnected(data.antenna.connected);
-                setcircledata(data.circledata);
-                setsweepdata(data.sweepdata);
-                setDFdata([...data.DFdata.measurements]);
-                setrecentdf(
-                    data.DFdata.measurements[
-                        data.DFdata.measurements.length - 1
-                    ]
-                );
-
-                console.log(data.DFdata.measurements);
             });
     }
 
@@ -97,7 +78,8 @@ function App() {
     }
 
     async function sendCommand(command, value) {
-        var payload = { command: command, value: value };
+        var payload = { command: command, value: value, sysid: activesys };
+        console.log("SENTSYS: ", activesys);
         await fetch("http://localhost:3003/command", {
             method: "POST",
             headers: {
@@ -109,6 +91,7 @@ function App() {
 
     useEffect(() => {
         const int = setInterval(getData, 1000 / 10);
+        sendCommand("clearlines", 0);
         return () => clearInterval(int);
     }, []);
 
@@ -121,12 +104,23 @@ function App() {
     }, [mode]);
 
     useEffect(() => {
+        //get sysids
         var newarr = [];
         for (var i = 0; i < dronesdata.length; i++) {
             newarr.push(dronesdata[i].drone.sysid);
         }
         setsysids(newarr);
-        console.log("DRONES: ", dronesdata);
+        try {
+            console.log(
+                "Antenna location",
+                dronesdata[0].DFdata.recent.lat,
+                dronesdata[0].DFdata.recent.lng
+            );
+        } catch {
+            console.log("No Recent Data");
+        }
+
+        //console.log("DRONES: ", dronesdata);
     }, [dronesdata]);
 
     useEffect(() => {
@@ -176,34 +170,53 @@ function App() {
                     Kraken
                 </div>
 
-                <div
-                    style={{
-                        flex: 0.5,
-                        fontFamily: "system-ui",
-                        color: connected ? "lightgreen" : "red",
-                        fontSize: 20,
-                    }}
-                >
-                    System: {connected ? "CONNECTED" : "DISCONNECTED"}
-                </div>
-                <div
-                    style={{
-                        flex: 0.4,
-                        fontFamily: "system-ui",
-                        color: sensorconnected ? "lightgreen" : "red",
-                        fontSize: 20,
-                    }}
-                >
-                    Sensor: {sensorconnected ? "CONNECTED" : "DISCONNECTED"}
-                    {!sensorconnected && (
-                        <Button
-                            onpress={() => {
-                                sendCommand("connectsensor", 0);
-                            }}
-                            text="Connect"
-                        ></Button>
-                    )}
-                </div>
+                {dronesdata.map((dronedata) => {
+                    //console.log("SYSID", dronedata.drone, activesys);
+                    if (dronedata.drone.sysid == activesys) {
+                        return (
+                            <>
+                                <div
+                                    style={{
+                                        flex: 0.5,
+                                        fontFamily: "system-ui",
+                                        color: dronedata.program.connected
+                                            ? "lightgreen"
+                                            : "red",
+                                        fontSize: 20,
+                                    }}
+                                >
+                                    System:{" "}
+                                    {dronedata.program.connected
+                                        ? "CONNECTED"
+                                        : "DISCONNECTED"}
+                                </div>
+                                <div
+                                    style={{
+                                        flex: 0.4,
+                                        fontFamily: "system-ui",
+                                        color: dronedata.antenna.connected
+                                            ? "lightgreen"
+                                            : "red",
+                                        fontSize: 20,
+                                    }}
+                                >
+                                    Sensor:{" "}
+                                    {dronedata.antenna.connected
+                                        ? "CONNECTED"
+                                        : "DISCONNECTED"}
+                                    {!dronedata.antenna.connected && (
+                                        <Button
+                                            onpress={() => {
+                                                sendCommand("connectsensor", 0);
+                                            }}
+                                            text="Connect"
+                                        ></Button>
+                                    )}
+                                </div>
+                            </>
+                        );
+                    }
+                })}
             </div>
             <div className="container">
                 <div className="left">
@@ -212,20 +225,25 @@ function App() {
                         values={sysids}
                         setvalue={setactivesys}
                     ></Dropdown>
+
                     <div className="box">
                         {dronesdata.map((drone) => {
-                            return (
-                                <>
-                                    <div className="divider">Drone Data</div>
-                                    Altitude: {drone.drone.alt}
-                                    <br></br>
-                                    Longitude: {drone.drone.lng.toFixed(7)}
-                                    <br></br>
-                                    Latitude: {drone.drone.lat.toFixed(7)}
-                                    <br></br>
-                                    Heading: {drone.drone.hdg}°
-                                </>
-                            );
+                            if (drone.drone.sysid == activesys) {
+                                return (
+                                    <>
+                                        <div className="divider">
+                                            Drone {drone.drone.sysid} Data{" "}
+                                        </div>
+                                        Altitude: {drone.drone.alt.toFixed(3)}
+                                        <br></br>
+                                        Longitude: {drone.drone.lng.toFixed(7)}
+                                        <br></br>
+                                        Latitude: {drone.drone.lat.toFixed(7)}
+                                        <br></br>
+                                        Heading: {drone.drone.hdg}°
+                                    </>
+                                );
+                            }
                         })}
                     </div>
                     <div className="box">
@@ -235,23 +253,33 @@ function App() {
                         Latitude: {radio.lat.toFixed(7)}
                     </div>
 
-                    <div className="box">
-                        <div className="divider">Antenna Data</div>
-                        Longitude: {antenna.lng.toFixed(7)}
-                        <br></br>
-                        Latitude: {antenna.lat.toFixed(7)}
-                        <br></br>
-                        Heading: {antenna.hdg}°<br></br>
-                        Angle: {antenna.ang}
-                        <br></br>
-                        Gain: {antenna.gain}
-                        <br></br>
-                        Power Reading: {antenna.reading.toFixed(2)}
-                        <br></br>
-                        Collecting: {antenna.collecting ? "🟢" : "🔴"}
-                        <br></br>
-                        Center Frequency: {antenna.frequency}
-                    </div>
+                    {dronesdata.map((dronedata) => {
+                        if (dronedata.drone.sysid == activesys) {
+                            return dronedata.antenna.connected ? (
+                                <>
+                                    <div className="box">
+                                        <div className="divider">
+                                            Kraken {activesys} Data
+                                        </div>
+                                        Direction Reading:{" "}
+                                        {dronedata.antenna.reading.toFixed(2)}
+                                        <br></br>
+                                        Collecting:{" "}
+                                        {dronedata.antenna.collecting
+                                            ? "🟢"
+                                            : "🔴"}
+                                        <br></br>
+                                        Center Frequency:{" "}
+                                        {dronedata.antenna.frequency}
+                                    </div>
+                                </>
+                            ) : (
+                                <div style={{ color: "red" }}>
+                                    Sensor Not Connected
+                                </div>
+                            );
+                        }
+                    })}
 
                     {vehicle == "Radiohound" && (
                         <Dronescreen
@@ -267,6 +295,7 @@ function App() {
                             antenna={antenna}
                             mode={mode}
                             setmode={setmode}
+                            activesys={activesys}
                             sendCommand={sendCommand}
                             setplotting={setplotting}
                             DFdata={DFdata}
@@ -282,6 +311,7 @@ function App() {
                             flex: 1,
                         }}
                     >
+                        {/*
                         <div
                             style={{
                                 flex: 1,
@@ -303,6 +333,7 @@ function App() {
                         >
                             STATUS: {status}
                         </div>
+                        */}
                         <div
                             style={{
                                 flex: 1,
@@ -339,10 +370,8 @@ function App() {
                     <Dronemap
                         dronesdata={dronesdata}
                         radio={radio}
-                        antenna={antenna}
                         setradio={setradio}
-                        circledata={circledata}
-                        sweepdata={sweepdata}
+                        antenna={antenna}
                         status={status}
                         mappos={mappos}
                         DFdata={DFdata}

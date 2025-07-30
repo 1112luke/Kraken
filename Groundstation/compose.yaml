@@ -15,9 +15,7 @@ services:
     network_mode: "host"
     command:
         - --master
-        - tcp:192.168.1.225:14553 #vehicle 1
-        - --master
-        - tcp:192.168.1.225:5770 #vehicle 2
+        - tcp:192.168.10.2:14553 #vehicle 1
         - --baud
         - "57600"
         - --out

@@ -10,6 +10,20 @@ from Kraken import Kraken
 def finishCircle(self, first, speed):
     self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component,115,0,first,speed,1,0,0,0,0)
 
+def angleTo(lat1, lng1, lat2, lng2):
+    """
+    Returns the bearing (angle) from point A (lat1, lng1) to point B (lat2, lng2) in degrees.
+    """
+    dLon = math.radians(lng2 - lng1)
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+
+    y = math.sin(dLon) * math.cos(lat2)
+    x = math.cos(lat1) * math.sin(lat2) - \
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLon)
+
+    bearing = math.atan2(y, x)
+    return (math.degrees(bearing) + 360) % 360
 
 class Hounddrone:
     def __init__(self, radiomode="Kraken", radioaddress = None):
@@ -30,6 +44,8 @@ class Hounddrone:
         self.krakenthread = None
         self.connected = False
         self.thread_stop = False
+        self.fakedata = False
+        self.fakeradiopos = {"lat": 0, "lng": 0}
 
         #initialize radio
         if (self.radiomode == "Kraken"):
@@ -192,7 +208,11 @@ class Hounddrone:
     
     def sendData(self):
         #send antenna data
-        self.connection.mav.command_int_send(0, 0, 0, 33339, 0, 0, float(self.radiodata["data"]), float(self.radiodata["num"]), float(self.radiodata["hdg"]), float(self.collecting), int(self.lat*1E7), int(self.lng*1E7), 0)
+        if not self.fakedata:
+            self.connection.mav.command_int_send(0, 0, 0, 33339, 0, 0, float(self.radiodata["data"]), float(self.radiodata["num"]), float(self.radiodata["hdg"]), float(self.collecting), int(self.lat*1E7), int(self.lng*1E7), 0)
+        elif self.fakedata:
+            self.connection.mav.command_int_send(0, 0, 0, 33339, 0, 0,float(angleTo(self.lat, self.lng, self.fakeradiopos["lat"], self.fakeradiopos["lng"])-self.hdg), float(self.radiodata["num"]), float(self.radiodata["hdg"]), float(self.collecting), int(self.lat*1E7), int(self.lng*1E7), 0)
+
 
         #send sensor connection data
         self.connection.mav.command_long_send(0,0,33340,0,float(self.kraken.connected), float(self.kraken.freq),0,0,0,0,0)

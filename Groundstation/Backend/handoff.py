@@ -62,7 +62,7 @@ def getData():
 
         if msg.get_type() == "GLOBAL_POSITION_INT":
             try:
-                drone.drone["alt"] = msg.alt / 1000
+                drone.drone["alt"] = msg.relative_alt / 1000 * 3.28084 #go from mm to feet
                 drone.drone["lat"] = msg.lat * 1e-7
                 drone.drone["lng"] = msg.lon * 1e-7
                 drone.drone["hdg"] = msg.hdg / 100
@@ -110,17 +110,18 @@ def Server():
         data = request.get_json()
         payload = {
             "command": data.get("command"),
-            "value": data.get("value")
+            "value": data.get("value"),
+            "sysid": data.get("sysid"),
         }
 
         text = json.dumps(payload).encode('utf-8')
-        print("sentexec")
 
         cmdnum = 0
         param1 = param2 = param3 = param4 = param5 = param6 = param7 = 0
 
         command = payload["command"]
         value = payload["value"]
+        thissysid = payload["sysid"]
 
         if command == "setradiopos":
             cmdnum = 33333
@@ -175,7 +176,8 @@ def Server():
             param1 = value
 
         for _ in range(50):
-            the_connection.mav.command_long_send(1, 191, cmdnum, 0,
+            print("sent to sys: ", thissysid)
+            the_connection.mav.command_long_send(int(thissysid), 191, cmdnum, 0,
                                                  float(param1), float(param2), float(param3),
                                                  float(param4), float(param5), float(param6), float(param7))
             time.sleep(0.01)

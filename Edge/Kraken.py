@@ -25,6 +25,7 @@ class Kraken:
         self.freqthread.start()
 
     def collectdata(self):
+      
         self.heartbeattime = time.time()
         while(self.connected):
             try:
@@ -49,6 +50,7 @@ class Kraken:
                 self.currdata = np.argmax(data)
             except:
                 print("failed to get kraken data")
+
 
     def checkthread(self):
         while(1):

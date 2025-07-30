@@ -10,7 +10,7 @@ import math
 import time
 
 #create drone object
-Drone = Hounddrone(radiomode="Kraken", radioaddress="e415f6f662e5")
+Drone = Hounddrone(radiomode="Kraken", radioaddress="e415f6f662e5") 
 
 #initialize connection
 monitorthread = Thread(target = Drone.monitormavlink)
@@ -40,6 +40,7 @@ ROTATIONSPEED = 50
 MOVEMENTSPEED = 0
 DATARATE = 20
 RADIOSOURCE = "simulation" #simulation or real
+RADIOPOS = {"lat": 0, "lng": 0}
 
 #for radiofollow
 radiodirection = 0
@@ -48,10 +49,6 @@ sweepwidth = 160 #sweepwidth in degrees
 
 
 def main():
-    
-    
-    #active control of drone based on data
-    
     global lastmode
     global status
     global circledata
@@ -323,8 +320,8 @@ def sendData(): #send data from drone to groundstation
             #send status data
             Drone.sendText(0,0,f'status:{status}')
             Drone.sendData()
-        except:
-            print("drone unable to senddata")
+        except e as Exception:
+            print("drone unable to senddata: ", e)
 
         time.sleep(1/rate)
     
@@ -393,12 +390,13 @@ def receiveData():
                 
         #if commamnd long message
         elif msg.get_type() == "COMMAND_LONG":
-            '''
+            
             #setradiopos
             if msg.command == 33333:
-                #print("got position")
-                radio.lat = msg.param1
-                radio.lng = msg.param2
+                print("got position")
+                Drone.fakeradiopos["lat"] = msg.param1
+                Drone.fakeradiopos["lng"] = msg.param2
+            '''
             elif msg.command == 33334:
                 if msg.param1:
                     print("none")

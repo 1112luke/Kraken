@@ -9,6 +9,7 @@ export default function Krakenscreen({
     setplotting,
     DFdata,
     setnum2plot,
+    activesys,
     radio,
 }) {
     const [currfreq, setcurrfreq] = useState(915);
@@ -16,7 +17,7 @@ export default function Krakenscreen({
     return (
         <>
             <div className="box">
-                <div>KRAKEN CONTROL:</div>
+                <div>KRAKEN {activesys} CONTROL:</div>
                 <br></br>
                 <div>
                     <Button
@@ -25,7 +26,7 @@ export default function Krakenscreen({
                         }}
                         text={"Start Collecting"}
                     ></Button>
-                    <br></br>``
+                    <br></br>
                     <Button
                         onpress={() => {
                             sendCommand("setcollecting", 0);

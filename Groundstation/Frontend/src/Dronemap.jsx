@@ -61,7 +61,7 @@ export default function Dronemap({
                 <AdvancedMarker
                     position={radio}
                     draggable
-                    onDrag={(e) => {
+                    onDragEnd={(e) => {
                         setradio({
                             lat: e.latLng?.lat() ?? 0,
                             lng: e.latLng?.lng() ?? 0,
@@ -145,29 +145,39 @@ export default function Dronemap({
                                 strokeWeight={2}
                             />
                             {/*Current DFline*/}
-                            {recentdf && (
+                            {dronedata.DFdata.recent && (
                                 <Polyline
                                     path={[
                                         {
-                                            lat: recentdf.lat * 1e-7,
-                                            lng: recentdf.lng * 1e-7,
+                                            lat:
+                                                dronedata.DFdata.recent.lat *
+                                                1e-7,
+                                            lng:
+                                                dronedata.DFdata.recent.lng *
+                                                1e-7,
                                         },
                                         {
                                             lat:
-                                                recentdf.lat * 1e-7 +
+                                                dronedata.DFdata.recent.lat *
+                                                    1e-7 +
                                                 0.0005 *
                                                     Math.cos(
-                                                        ((recentdf.hdg +
-                                                            recentdf.data) *
+                                                        ((dronedata.DFdata
+                                                            .recent.hdg +
+                                                            dronedata.DFdata
+                                                                .recent.data) *
                                                             Math.PI) /
                                                             180
                                                     ),
                                             lng:
-                                                recentdf.lng * 1e-7 +
+                                                dronedata.DFdata.recent.lng *
+                                                    1e-7 +
                                                 0.0005 *
                                                     Math.sin(
-                                                        ((recentdf.hdg +
-                                                            recentdf.data) *
+                                                        ((dronedata.DFdata
+                                                            .recent.hdg +
+                                                            dronedata.DFdata
+                                                                .recent.data) *
                                                             Math.PI) /
                                                             180
                                                     ),
