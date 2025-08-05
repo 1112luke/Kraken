@@ -8,6 +8,8 @@ import json
 import logging
 import math
 import time
+import argparse
+import sys
 
 #create drone object
 Drone = Hounddrone(radiomode="Kraken", radioaddress="e415f6f662e5") 
@@ -16,10 +18,6 @@ Drone = Hounddrone(radiomode="Kraken", radioaddress="e415f6f662e5")
 monitorthread = Thread(target = Drone.monitormavlink)
 Drone.connectmavlink()
 monitorthread.start()
-
-#prompt flight controller what messages to stream and how fast
-#global_position_int -- tell FC to stream position
-Drone.requestMessageStream(33, 10)
 
 time.sleep(1) #sleep to allow drone to start producing relevant data
 
@@ -339,6 +337,7 @@ def receiveData():
     global ROTATIONSPEED
     global RADIOSOURCE
     global DATARATE
+    global Drone
 
     while(1):
         if(Drone.thread_stop):
@@ -389,8 +388,8 @@ def receiveData():
             #    sweepdata = []
                 
         #if commamnd long message
-        elif msg.get_type() == "COMMAND_LONG":
-            
+        elif msg.get_type() == "COMMAND_LONG" and msg.target_system == Drone.sysid:
+
             #setradiopos
             if msg.command == 33333:
                 print("got position")
@@ -474,6 +473,7 @@ def threadmonitor():
                 threads['send'] = Thread(target=sendData, name="sendData")
                 threads['recv'] = Thread(target=receiveData, name="receiveData")
                 threads['heartbeat'] = Thread(target=Drone.sendheartbeat, name="sendHeartbeat")
+                threads['rateupdate'] = Thread(target = Drone.requestMessages, name="requestMessages")
 
                 for name, t in threads.items():
                     print(f"[MONITOR] Starting thread: {name}")

@@ -5,7 +5,7 @@ import numpy as np
 from threading import Thread
 
 class Kraken:
-    def __init__(self):
+    def __init__(self, ip):
         self.hasdata = 0
         self.currdata = 0
         self.collectnum = 0
@@ -15,6 +15,7 @@ class Kraken:
         self.freq = 915000000
         self.lasttried = 915
         self.collectdataflag = True
+        self.krakenip = ip
 
         self.checkthread = Thread(target = self.checkthread)
 
@@ -64,7 +65,14 @@ class Kraken:
         self.udpsock.bind(("0.0.0.0", 3331))
         while(1):
             data, addr = self.udpsock.recvfrom(1024)
-            self.freq = data.decode().strip()
+            sender_ip = addr[0]
+            if sender_ip == self.krakenip: #filter for only my kraken's ip
+                try:
+                    self.freq = data.decode().strip()
+                except UnicodeDecodeError:
+                    print("Received non-decodable data from allowed sender.")
+            else:
+                print(f"Ignored frequency data from unknown sender: {sender_ip}")
 
     def start(self):
         while(1):
@@ -73,7 +81,7 @@ class Kraken:
                     print("Attempting Kraken Connection: ")
                     self.s = socket.socket()
                     print(self.s)
-                    self.s.connect(("192.168.10.33", 3333))
+                    self.s.connect((self.krakenip, 3333))
                     print("KRAKEN CONNNECTED")
                     self.connected = 1
                     self.collectdataflag = True
@@ -89,7 +97,7 @@ class Kraken:
         if(self.lasttried != int(infreq)*10**6):
             newfreq = "FREQ:" + str(infreq)
             currsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            currsock.sendto(newfreq.encode(), (("192.168.10.33", 3332)))
+            currsock.sendto(newfreq.encode(), ((self.krakenip, 3332)))
         self.lasttried = int(infreq)*10**6
     def getdata(self):
         self.hasdata = 0

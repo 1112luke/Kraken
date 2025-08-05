@@ -194,14 +194,17 @@ function App() {
                                     style={{
                                         flex: 0.4,
                                         fontFamily: "system-ui",
-                                        color: dronedata.antenna.connected
-                                            ? "lightgreen"
-                                            : "red",
+                                        color:
+                                            dronedata.antenna.connected &&
+                                            dronedata.program.connected
+                                                ? "lightgreen"
+                                                : "red",
                                         fontSize: 20,
                                     }}
                                 >
                                     Sensor:{" "}
-                                    {dronedata.antenna.connected
+                                    {dronedata.antenna.connected &&
+                                    dronedata.program.connected
                                         ? "CONNECTED"
                                         : "DISCONNECTED"}
                                     {!dronedata.antenna.connected && (
@@ -347,8 +350,10 @@ function App() {
                                 text={"Center Drone"}
                                 onpress={() => {
                                     setmapppos({
-                                        lat: dronesdata[0].drone.lat,
-                                        lng: dronesdata[0].drone.lng,
+                                        lat: dronesdata[activesys - 1].drone
+                                            .lat,
+                                        lng: dronesdata[activesys - 1].drone
+                                            .lng,
                                     });
                                 }}
                                 style={{ flex: 1 }}
@@ -357,8 +362,10 @@ function App() {
                                 text={"Get radio"}
                                 onpress={() => {
                                     setradio({
-                                        lat: dronesdata[0].drone.lat,
-                                        lng: dronesdata[0].drone.lng,
+                                        lat: dronesdata[activesys - 1].drone
+                                            .lat,
+                                        lng: dronesdata[activesys - 1].drone
+                                            .lng,
                                     });
                                 }}
                                 style={{ flex: 1 }}

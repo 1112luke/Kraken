@@ -21,4 +21,4 @@ RUN pip install -r requirements.txt
 
 COPY . . 
 
-CMD ["python", "./Drone.py"]
+ENTRYPOINT ["python", "./Drone.py"]

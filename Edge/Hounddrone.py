@@ -6,6 +6,7 @@ from threading import Timer
 import threading
 from parseData import parseData
 from Kraken import Kraken
+import argparse
 
 def finishCircle(self, first, speed):
     self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component,115,0,first,speed,1,0,0,0,0)
@@ -46,10 +47,15 @@ class Hounddrone:
         self.thread_stop = False
         self.fakedata = False
         self.fakeradiopos = {"lat": 0, "lng": 0}
+        self.sensorip = "192.168.10.31"
+        self.sysid = 1
+
+        #get args
+        self.readargs()
 
         #initialize radio
         if (self.radiomode == "Kraken"):
-            self.kraken = Kraken()
+            self.kraken = Kraken(self.sensorip)
             self.krakenthread = threading.Thread(target = self.kraken.start)
             self.krakenthread.start()
 
@@ -134,12 +140,23 @@ class Hounddrone:
                 print("⚠️ MAVLink monitor error:", e)
                 time.sleep(1)
                 self.connectmavlink()
+
+    def readargs(self):
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--krakenip", type=str, default="192.168.10.31")
+        parser.add_argument("--sysid", type=int, default=1)
+        args = parser.parse_args()
+        self.sensorip = args.krakenip
+        self.sysid = args.sysid
+
+        print(f"KRAKENIP: {args.krakenip}, sysid: {args.sysid}")
+                
     
     def connectmavlink(self):
         while True:
             try:
-                print("Attempting MAVLink connection...")
-                self.connection = mavutil.mavlink_connection("udp:0.0.0.0:14551", source_system=1, source_component=191)
+                self.connection = mavutil.mavlink_connection("udp:127.0.0.1:14551", source_system=self.sysid, source_component=191)
                 self.connection.wait_heartbeat(timeout=3)
                 print(f"✅ Connected to MAVLink system {self.connection.target_system}, component {self.connection.target_component}")
                 return  # Successful connection
@@ -158,6 +175,20 @@ class Hounddrone:
     def requestMessageStream(self, message, hz):
         rate = 1000000/hz
         self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component,mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,0,message,rate,0,0,0,0,0)
+
+
+    def requestMessages(self):
+        while (1):
+            if(self.thread_stop):
+                break
+            #request message rate every 10 seconds
+            try:
+                print("REQUESTING MESSAGES")
+                self.requestMessageStream(33, 10) #GPS at 10 Hz
+            except Exception as e:
+                print("ERROR REQUESTING: ", e)
+                pass
+            time.sleep(10)
 
     def arm(self):
         self.connection.mav.command_long_send(self.connection.target_system, self.connection.target_component,400,0,1,0,0,0,0,0,0)

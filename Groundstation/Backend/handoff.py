@@ -44,6 +44,8 @@ def getData():
     while True:
         msg = the_connection.recv_match(blocking=True)
         currsysid = msg.get_srcSystem()
+        if currsysid <= 0 or currsysid >= 255:
+            continue
         currdroneindex = None
 
         # Match drone by sysid
@@ -178,8 +180,8 @@ def Server():
         for _ in range(50):
             print("sent to sys: ", thissysid)
             the_connection.mav.command_long_send(int(thissysid), 191, cmdnum, 0,
-                                                 float(param1), float(param2), float(param3),
-                                                 float(param4), float(param5), float(param6), float(param7))
+                                                    float(param1), float(param2), float(param3),
+                                                    float(param4), float(param5), float(param6), float(param7))
             time.sleep(0.01)
 
         return "amazing"

@@ -1,6 +1,8 @@
 services:
   handoff:
     build: ./Backend
+    tty: true           # Enables terminal allocation
+    stdin_open: true    # Keeps stdin open
     ports:
       - "14553:14553/udp"
       - "3003:3003"
@@ -15,7 +17,7 @@ services:
     network_mode: "host"
     command:
         - --master
-        - tcp:192.168.10.2:14553 #vehicle 1
+        - tcp:192.168.10.11:14553 #vehicle 1
         - --baud
         - "57600"
         - --out
