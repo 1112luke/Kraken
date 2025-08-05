@@ -120,7 +120,7 @@ function App() {
             console.log("No Recent Data");
         }
 
-        //console.log("DRONES: ", dronesdata);
+        console.log("DRONES: ", dronesdata);
     }, [dronesdata]);
 
     useEffect(() => {
@@ -301,7 +301,12 @@ function App() {
                             activesys={activesys}
                             sendCommand={sendCommand}
                             setplotting={setplotting}
-                            DFdata={DFdata}
+                            DFdata={
+                                dronesdata[activesys - 1]
+                                    ? dronesdata[activesys - 1].DFdata
+                                          .measurements
+                                    : []
+                            }
                             setnum2plot={setnum2plot}
                         ></Krakenscreen>
                     )}

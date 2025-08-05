@@ -45,6 +45,7 @@ export default function Krakenscreen({
                     <br></br>
                     <Button
                         onpress={() => {
+                            console.log(DFdata);
                             setplotting(false);
                             setnum2plot(DFdata.length);
                             console.log("settingnum2plot: ", DFdata.length);

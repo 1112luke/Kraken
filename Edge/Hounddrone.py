@@ -102,6 +102,7 @@ class Hounddrone:
                 while(1):
                     try:
                         if(self.collecting):
+                            #print("Collecting, ", self.kraken.getdata(), "lat: ", self.lat, "lng: ", self.lng)
                             if("DATA:", self.kraken.gethasdata()):
                                 self.kraken.getdata()
                                 self.radiodata = {"data": self.kraken.getdata(), "hdg": self.hdg, "lat":self.lat, "lng": self.lng, "num": self.kraken.getcollectnum()}
@@ -266,6 +267,8 @@ class Hounddrone:
                 break
             #constantly get messages and set attributes
             msg = self.connection.recv_match(blocking=True)
+            if(msg.get_srcSystem() != self.sysid):
+                continue
 
             try:
                 GPI = self.connection.messages["GLOBAL_POSITION_INT"]
@@ -277,6 +280,7 @@ class Hounddrone:
                 self.lat = GPI.lat*1E-7
                 self.lng = GPI.lon*1E-7
                 self.hdg = GPI.hdg/100
+                print("Lat:", GPI.lat*1E-7, "Lng: ", GPI.lon*1E-7, f"\nFrom System {msg.get_srcSystem()}")
             
 
             #if antenna is connected, update its position accordingly

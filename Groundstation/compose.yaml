@@ -18,6 +18,10 @@ services:
     command:
         - --master
         - tcp:192.168.10.11:14553 #vehicle 1
+        #- --master
+        #- tcp:192.168.10.12:14553 #vehicle 2
+        #- --master
+        #- tcp:192.168.10.13:14553 #vehicle 3
         - --baud
         - "57600"
         - --out
