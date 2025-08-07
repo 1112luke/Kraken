@@ -101,7 +101,7 @@ def Server():
     app = Flask(__name__)
     app.logger.setLevel(logging.ERROR)
     logging.getLogger('werkzeug').disabled = True
-    CORS(app)
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     @app.route('/data')
     def getDrone():
