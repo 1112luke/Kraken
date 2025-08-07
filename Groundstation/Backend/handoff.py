@@ -120,13 +120,23 @@ def add_cors_headers(response):
 @app.route('/data', methods=['GET', 'OPTIONS'])
 def getDrone():
     if request.method == 'OPTIONS':
-        return '', 200
+        resp = app.make_response('')
+        resp.status_code = 200
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        resp.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+        return resp
     return jsonify([drone.to_dict() for drone in dronedata])
 
 @app.route("/command", methods=['POST', 'OPTIONS'])
 def doCommand():
     if request.method == 'OPTIONS':
-        return '', 200
+        resp = app.make_response('')
+        resp.status_code = 200
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        resp.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+        return resp
 
     data = request.get_json()
     payload = {
