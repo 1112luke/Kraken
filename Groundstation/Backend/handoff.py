@@ -106,38 +106,16 @@ def getData():
 app = Flask(__name__)
 app.logger.setLevel(logging.ERROR)
 logging.getLogger('werkzeug').disabled = True
+
+# Enable CORS for all routes and origins
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-#MORE CORS SETUP
-@app.after_request
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'  # allow all origins, or specify your frontend URL instead
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
-    response.headers['Referrer-Policy'] = 'no-referrer-when-downgrade'  # avoids strict-origin-when-cross-origin issues
-    return response
-
-@app.route('/data', methods=['GET', 'OPTIONS'])
+@app.route('/data', methods=['GET'])
 def getDrone():
-    if request.method == 'OPTIONS':
-        resp = app.make_response('')
-        resp.status_code = 200
-        resp.headers['Access-Control-Allow-Origin'] = '*'
-        resp.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-        resp.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
-        return resp
     return jsonify([drone.to_dict() for drone in dronedata])
 
-@app.route("/command", methods=['POST', 'OPTIONS'])
+@app.route("/command", methods=['POST'])
 def doCommand():
-    if request.method == 'OPTIONS':
-        resp = app.make_response('')
-        resp.status_code = 200
-        resp.headers['Access-Control-Allow-Origin'] = '*'
-        resp.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-        resp.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
-        return resp
-
     data = request.get_json()
     payload = {
         "command": data.get("command"),
