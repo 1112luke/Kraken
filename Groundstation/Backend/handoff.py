@@ -108,12 +108,26 @@ app.logger.setLevel(logging.ERROR)
 logging.getLogger('werkzeug').disabled = True
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-@app.route('/data')
+#MORE CORS SETUP
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'  # allow all origins, or specify your frontend URL instead
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+    response.headers['Referrer-Policy'] = 'no-referrer-when-downgrade'  # avoids strict-origin-when-cross-origin issues
+    return response
+
+@app.route('/data', methods=['GET', 'OPTIONS'])
 def getDrone():
+    if request.method == 'OPTIONS':
+        return '', 200
     return jsonify([drone.to_dict() for drone in dronedata])
 
-@app.route("/command", methods=['POST'])
+@app.route("/command", methods=['POST', 'OPTIONS'])
 def doCommand():
+    if request.method == 'OPTIONS':
+        return '', 200
+
     data = request.get_json()
     payload = {
         "command": data.get("command"),
