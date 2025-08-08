@@ -21,11 +21,31 @@ For all current modes of operation, it is required that the Kraken be connected 
 
 ### Hardware
 
-assumptions about this being for ardupilot systems, how to connect the whole system
+All software for the Kraken payload is designed with Ardupilot systems in mind. The system communicates via the Mavlink protocol, simply injecting its data into the existing stream. Installation of the payload requires proper connection of the Kraken Payload and a companion computer
 
 #### Kraken
 
+Installation of the Kraken requires two connections:
+
+1. Power
+   Power is provided to the Kraken via an XT-60 connector. the Kraken can be powered with input from 5-25 volts and draws around 2 amps of current at peak operation. We powered the Kraken our onboard 6S flight battery.
+3. Data
+   The Kraken data line is an ethernet port which should be plugged into the companion computer running the appropriate OS image.
+
 #### Companion Computer
+
+The companion computer requires four connections:
+
+1. Power
+   We power our companion computer using a BEC from our 6s Flight Battery
+3. Flight Controller Data
+   Connection from the flight computer to the companion computer must be established using [this](https://ardupilot.org/dev/docs/raspberry-pi-via-mavlink.html) guide.
+5. Kraken Payload Data
+   The Kraken's ethernet cable should be plugged directly into the companion computer's ethernet port.
+7. GCS Data via ethernet radio
+   To control the Kraken, an ethernet radio connection to the ground is necessary. Our flight controller communicates via RFD900x serial radios, so we installed an additional radio for use by the Kraken. If the system already uses    ethernet radio and mavlink, it is likely that configuration can be changed to use the existing radio.
+
+
 
 ### Software
 
