@@ -20,8 +20,12 @@ export default function Dropdown({ value, values, setvalue }) {
                     color: "var(--text)",
                 }}
             >
-                {values.map((val) => {
-                    return <option value={val}>{val}</option>;
+                {values.map((val, index) => {
+                    return (
+                        <option value={val} key={index}>
+                            {val}
+                        </option>
+                    );
                 })}
             </select>
         </>

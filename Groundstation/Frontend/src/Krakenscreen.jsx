@@ -11,6 +11,9 @@ export default function Krakenscreen({
     setnum2plot,
     activesys,
     radio,
+    averagelines,
+    setaveragelines,
+    setaveraging,
 }) {
     const [currfreq, setcurrfreq] = useState(915);
 
@@ -36,6 +39,21 @@ export default function Krakenscreen({
                     <br></br>
                     <Button
                         onpress={() => {
+                            setaveraging(true);
+                            setaveragelines([[], ...averagelines]);
+                        }}
+                        text={"Start Average Line"}
+                    ></Button>
+                    <br></br>
+                    <Button
+                        onpress={() => {
+                            setaveraging(false);
+                        }}
+                        text={"Stop Average Line"}
+                    ></Button>
+                    <br></br>
+                    <Button
+                        onpress={() => {
                             sendCommand("clearlines", 0);
                             setnum2plot(1000);
                             setplotting(true);
@@ -56,6 +74,7 @@ export default function Krakenscreen({
                     <Button
                         onpress={() => {
                             sendCommand("clearlines", 0);
+                            setaveragelines([]);
                             setnum2plot(0);
                         }}
                         text={"Clear Lines"}

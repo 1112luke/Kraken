@@ -45,6 +45,7 @@ export default function Dronemap({
     DFdata,
     recentdf,
     num2plot,
+    averagelines,
 }) {
     return (
         <APIProvider apiKey={"AIzaSyAPlCn3s3ZjpUwKW6fqoKm5lXxpG3eHBCw"}>
@@ -234,6 +235,68 @@ export default function Dronemap({
                                         );
                                     }
                                 )}
+                            {/* Averaged lines */}
+                            {averagelines &&
+                                averagelines.map((lineGroup, groupIndex) => {
+                                    if (lineGroup.length === 0) return null;
+
+                                    // Compute average lat, lng, and dir
+                                    const avgLat =
+                                        lineGroup.reduce(
+                                            (sum, p) => sum + parseFloat(p.lat),
+                                            0
+                                        ) / lineGroup.length;
+                                    const avgLng =
+                                        lineGroup.reduce(
+                                            (sum, p) => sum + parseFloat(p.lng),
+                                            0
+                                        ) / lineGroup.length;
+
+                                    // Average direction is tricky due to circular nature, so use vector average
+                                    const avgDirRad = Math.atan2(
+                                        lineGroup.reduce(
+                                            (sum, p) =>
+                                                sum +
+                                                Math.sin(
+                                                    (p.dir * Math.PI) / 180
+                                                ),
+                                            0
+                                        ) / lineGroup.length,
+                                        lineGroup.reduce(
+                                            (sum, p) =>
+                                                sum +
+                                                Math.cos(
+                                                    (p.dir * Math.PI) / 180
+                                                ),
+                                            0
+                                        ) / lineGroup.length
+                                    );
+
+                                    const avgDirDeg =
+                                        (avgDirRad * 180) / Math.PI;
+
+                                    return (
+                                        <Polyline
+                                            key={`avgline-${groupIndex}`}
+                                            path={[
+                                                { lat: avgLat, lng: avgLng },
+                                                {
+                                                    lat:
+                                                        avgLat +
+                                                        0.002 *
+                                                            Math.cos(avgDirRad),
+                                                    lng:
+                                                        avgLng +
+                                                        0.002 *
+                                                            Math.sin(avgDirRad),
+                                                },
+                                            ]}
+                                            strokeColor="yellow"
+                                            strokeOpacity={0.9}
+                                            strokeWeight={3}
+                                        />
+                                    );
+                                })}
                             {/*lines for circledata*/}
                             {dronedata.circledata.circle &&
                                 dronedata.circledata.circle.map(

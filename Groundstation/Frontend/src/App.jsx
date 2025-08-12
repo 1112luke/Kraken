@@ -6,6 +6,7 @@ import Button from "./Button";
 import Dronescreen from "./Dronescreen";
 import Dropdown from "./Dropdown";
 import Krakenscreen from "./Krakenscreen";
+import Dronemapoffline from "./Dronemapoffline";
 
 function App() {
     //stateful variables for Drone
@@ -30,6 +31,10 @@ function App() {
     const [sysids, setsysids] = useState([]);
     const [activesys, setactivesys] = useState(1);
 
+    const [averagelines, setaveragelines] = useState([]);
+
+    const [averaging, setaveraging] = useState(false);
+
     //kraken stateful variables
     const [DFdata, setDFdata] = useState([]);
     const [recentdf, setrecentdf] = useState("none");
@@ -45,6 +50,12 @@ function App() {
     const [mappos, setmapppos] = useState({
         lat: -35.3632621,
         lng: 149.1652374,
+    });
+    //stateful variables for offline map
+    const [viewstate, setviewstate] = useState({
+        latitude: 39.778815,
+        longitude: -84.104479,
+        zoom: 15,
     });
 
     //global stateful variables
@@ -64,6 +75,20 @@ function App() {
                         ];
                 }
                 setdronesdata([...data]);
+
+                if (averaging) {
+                    const newdata = [...averagelines];
+                    if (!newdata[0]) newdata[0] = []; // ensure first line exists
+                    newdata[0] = [
+                        ...newdata[0],
+                        {
+                            dir: data[0].DFdata.recent,
+                            lat: data[0].drone.lat.toFixed(7),
+                            lng: data[0].drone.lng.toFixed(7),
+                        },
+                    ];
+                    setaveragelines(newdata);
+                }
             });
     }
 
@@ -308,6 +333,9 @@ function App() {
                                     : []
                             }
                             setnum2plot={setnum2plot}
+                            averagelines={averagelines}
+                            setaveragelines={setaveragelines}
+                            setaveraging={setaveraging}
                         ></Krakenscreen>
                     )}
                 </div>
@@ -349,6 +377,7 @@ function App() {
                                 display: "flex",
                                 justifyContent: "center",
                                 alignItems: "center",
+                                height: "30px",
                             }}
                         >
                             <Button
@@ -359,6 +388,13 @@ function App() {
                                             .lat,
                                         lng: dronesdata[activesys - 1].drone
                                             .lng,
+                                    });
+                                    setviewstate({
+                                        latitude:
+                                            dronesdata[activesys - 1].drone.lat,
+                                        longitude:
+                                            dronesdata[activesys - 1].drone.lng,
+                                        zoom: 16,
                                     });
                                 }}
                                 style={{ flex: 1 }}
@@ -379,6 +415,8 @@ function App() {
                     </div>
 
                     <div style={{ flex: 1 }}></div>
+                    {/*
+
                     <Dronemap
                         dronesdata={dronesdata}
                         radio={radio}
@@ -390,7 +428,28 @@ function App() {
                         recentdf={recentdf}
                         num2plot={num2plot}
                         plotting={plotting}
+                        averagelines={averagelines}
                     ></Dronemap>
+
+                    */}
+                    {/*  */}
+                    <Dronemapoffline
+                        style={{ width: "100%", height: "100%" }}
+                        width={"10"}
+                        dronesdata={dronesdata}
+                        radio={radio}
+                        setradio={setradio}
+                        antenna={antenna}
+                        status={status}
+                        mappos={mappos}
+                        DFdata={DFdata}
+                        recentdf={recentdf}
+                        num2plot={num2plot}
+                        plotting={plotting}
+                        averagelines={averagelines}
+                        viewstate={viewstate}
+                        setviewstate={setviewstate}
+                    ></Dronemapoffline>
                 </div>
             </div>
         </>
